@@ -32,6 +32,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
 
 // Input keys
 #define KEY_START_STOP_CLOCK    KEY_SPACE
+#define KEY_RESET_SHOT_CLOCK    KEY_LEFT_SHIFT
 #define KEY_SOUND_BUZZER        KEY_G
 #define KEY_CHANGING_HOME       KEY_H
 #define KEY_CHANGING_VISITOR    KEY_V
@@ -142,8 +143,8 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	Mode change_mode = SCORE;
 
 	// Display variables
-	Time main_clock = {3, 1, 0, 0, 0};
-	Time shot_clock = {0, 0, 0, 0, 0};
+	Time main_clock = {0, 8, 0, 0, 0};
+	Time shot_clock = {0, 0, 3, 5, 0};
 	int score[] = {0, 0};
 	int fouls[] = {0, 0};
 
@@ -151,6 +152,8 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 	// Other variables
 	Time time_zero = {0, 0, 0, 0, 0};
+	Time time_35 = {0, 0, 3, 5, 0};
+	Time time_8min = {0, 8, 0, 0, 0};
 
 	// Audio
 	InitAudioDevice ();
@@ -163,8 +166,9 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 		// Inputs and updating data
 		//-----------------------------------------------------------------------------------------
 
-		// Start/stop clock
+		// Clock controls
 		//----------------------------------------------------------------
+		// Start/stop clock
 		if (IsKeyPressed (KEY_START_STOP_CLOCK))
 		{
 			if (clock_stopped)
@@ -173,14 +177,20 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				clock_stopped = 1;
 		}
 		// Update clock
-		if (!clock_stopped)
+		if (!clock_stopped && !IsTimeEqual (shot_clock, time_zero))
 		{
 			if (add_tenth_second == 0)
+			{
 				main_clock = UpdateTime (main_clock);
+				shot_clock = UpdateTime (shot_clock);
+			}
 			add_tenth_second++;
 			if (add_tenth_second > 2)
 				add_tenth_second = 0;
 		}
+		// Reset shot clock
+		if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
+			shot_clock = time_35;
 		//----------------------------------------------------------------
 
 		// Changing mode
@@ -237,7 +247,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			if (!IsSoundPlaying (buzzer_sound))
 				PlaySound (buzzer_sound);
 		}
-		else if (!clock_stopped && IsTimeEqual (main_clock, time_zero))
+		else if (!clock_stopped && (IsTimeEqual (main_clock, time_zero) || IsTimeEqual (shot_clock, time_zero)))
 		{
 			if (!IsSoundPlaying (buzzer_sound))
 				PlaySound (buzzer_sound);
@@ -265,14 +275,15 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 			// Main Clock
 			//-------------------------------------------------------------------------------------
-			// Draw main clock rectangle + outline
+			// Update box
 			main_clock_box.width = border * 29;
 			main_clock_box.height = border * 11;
 			main_clock_box.x = (screen_width / 2) - (main_clock_box.width / 2);
 			main_clock_box.y = border;
-			DrawRectangle (main_clock_box.x - border, 0, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
+			// Draw boxes
+			DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
 			DrawRectangle (main_clock_box.x, main_clock_box.y, main_clock_box.width, main_clock_box.height, BLACK);
-			// Draw main clock digits
+			// Draw digits
 			if (main_clock.ten_minutes == 0 && main_clock.minutes == 0)
 			{
 				// Less than one minute
@@ -293,11 +304,38 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					DrawDigit (11, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
 					DrawDigit (main_clock.ten_minutes, main_clock_box.x + border, border * 2, border * 5, RED, 1);
-				DrawDigit (main_clock.minutes, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED,1 );
+				DrawDigit (main_clock.minutes, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
 				DrawDigit (main_clock.ten_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
 				DrawDigit (main_clock.seconds, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 2.5f), border, border, RED);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 7.5f), border, border, RED);
+			}
+			//-------------------------------------------------------------------------------------
+			
+			// Shot clock
+			//-------------------------------------------------------------------------------------
+			// Update box
+			shot_clock_box.width = border * 15;
+			shot_clock_box.height = border * 11;
+			shot_clock_box.x = (screen_width / 2) - (shot_clock_box.width / 2);
+			shot_clock_box.y = main_clock_box.y + main_clock_box.height + (border * 5);
+			// Draw boxes
+			DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), WHITE);
+			DrawRectangle (shot_clock_box.x, shot_clock_box.y, shot_clock_box.width, shot_clock_box.height, BLACK);
+			// Draw digits
+			if (shot_clock.ten_seconds == 0)
+			{
+				// Less than ten seconds
+				DrawDigit (shot_clock.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (shot_clock.tenth_seconds, shot_clock_box.x + (border * 9), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y + (border * 7.5f), border, border, GREEN);
+			}
+			else
+			{
+				// More than ten seconds
+				DrawDigit (shot_clock.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (shot_clock.seconds, shot_clock_box.x + (border * 9), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
 			}
 			//-------------------------------------------------------------------------------------
 
@@ -456,147 +494,147 @@ void DrawDigit (int digit, float posX, float posY, float width, Color color, int
 			if (use_all)
 			{
 				// Rectangles
-				top_color = RED;
-				bottom_color = RED;
-				top_left_color = RED;
-				bottom_left_color = RED;
-				top_right_color = RED;
-				bottom_right_color = RED;
+				top_color = color;
+				bottom_color = color;
+				top_left_color = color;
+				bottom_left_color = color;
+				top_right_color = color;
+				bottom_right_color = color;
 				// Corners
-				top_left_corner_color = RED;
-				middle_left_corner_color = RED;
-				bottom_left_corner_color = RED;
-				top_right_corner_color = RED;
-				middle_right_corner_color = RED;
-				bottom_right_corner_color = RED;
+				top_left_corner_color = color;
+				middle_left_corner_color = color;
+				bottom_left_corner_color = color;
+				top_right_corner_color = color;
+				middle_right_corner_color = color;
+				bottom_right_corner_color = color;
 			}
 			break;
 		case 1:
 			// Rectangles
-			top_right_color = RED;
-			bottom_right_color = RED;
+			top_right_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 2:
 			// Rectangles
-			top_color = RED;
-			middle_color = RED;
-			bottom_color = RED;
-			bottom_left_color = RED;
-			top_right_color = RED;
+			top_color = color;
+			middle_color = color;
+			bottom_color = color;
+			bottom_left_color = color;
+			top_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			bottom_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			bottom_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 3:
 			// Rectangles
-			top_color = RED;
-			middle_color = RED;
-			bottom_color = RED;
-			top_right_color = RED;
-			bottom_right_color = RED;
+			top_color = color;
+			middle_color = color;
+			bottom_color = color;
+			top_right_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			bottom_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			bottom_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 4:
 			// Rectangles
-			middle_color = RED;
-			top_left_color = RED;
-			top_right_color = RED;
-			bottom_right_color = RED;
+			middle_color = color;
+			top_left_color = color;
+			top_right_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 5:
 			// Rectangles
-			top_color = RED;
-			middle_color = RED;
-			bottom_color = RED;
-			top_left_color = RED;
-			bottom_right_color = RED;
+			top_color = color;
+			middle_color = color;
+			bottom_color = color;
+			top_left_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			bottom_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			bottom_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 6:
 			// Rectangles
-			top_color = RED;
-			middle_color = RED;
-			bottom_color = RED;
-			top_left_color = RED;
-			bottom_left_color = RED;
-			bottom_right_color = RED;
+			top_color = color;
+			middle_color = color;
+			bottom_color = color;
+			top_left_color = color;
+			bottom_left_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			bottom_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			bottom_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 7:
 			// Rectangles
-			top_color = RED;
-			top_right_color = RED;
-			bottom_right_color = RED;
+			top_color = color;
+			top_right_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 8:
 			// Rectangles
-			top_color = RED;
-			middle_color = RED;
-			bottom_color = RED;
-			top_left_color = RED;
-			bottom_left_color = RED;
-			top_right_color = RED;
-			bottom_right_color = RED;
+			top_color = color;
+			middle_color = color;
+			bottom_color = color;
+			top_left_color = color;
+			bottom_left_color = color;
+			top_right_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			bottom_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			bottom_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 		case 9:
 			// Rectangles
-			top_color = RED;
-			middle_color = RED;
-			bottom_color = RED;
-			top_left_color = RED;
-			top_right_color = RED;
-			bottom_right_color = RED;
+			top_color = color;
+			middle_color = color;
+			bottom_color = color;
+			top_left_color = color;
+			top_right_color = color;
+			bottom_right_color = color;
 			// Corners
-			top_left_corner_color = RED;
-			middle_left_corner_color = RED;
-			bottom_left_corner_color = RED;
-			top_right_corner_color = RED;
-			middle_right_corner_color = RED;
-			bottom_right_corner_color = RED;
+			top_left_corner_color = color;
+			middle_left_corner_color = color;
+			bottom_left_corner_color = color;
+			top_right_corner_color = color;
+			middle_right_corner_color = color;
+			bottom_right_corner_color = color;
 			break;
 	}
 	// Draw Rectangles
