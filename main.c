@@ -30,11 +30,24 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
 #define VERSION "1.0"
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
+// Input keys
+#define KEY_START_STOP_CLOCK    KEY_SPACE
+#define KEY_SOUND_BUZZER        KEY_G
+#define KEY_CHANGING_HOME       KEY_H
+#define KEY_CHANGING_VISITOR    KEY_V
+#define KEY_CHANGE_MODE_SCORE   KEY_S
+#define KEY_CHANGE_MODE_FOULS   KEY_F
+#define KEY_CHANGE_MODE_TOL     KEY_T
+
+#define NOT_SET 0
+#define HOME    1
+#define VISITOR 2
+
 #define DARKDARKGRAY (Color){25, 25, 25, 255}
 
 typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seconds; } Time;
-typedef enum Mode { NORMAL = 0, } Mode;
-typedef enum Possession { NOT_SET = 0, HOME, VISITOR } Possession;
+typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
+typedef enum Mode { SCORE = 0, FOULS, TOL } Mode;
 
 int IsTimeEqual (Time time1, Time time2);
 Time UpdateTime (Time time);
@@ -105,24 +118,39 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	InitWindow (1920, 1080, "Basketball Scoreboard");
 	SetTargetFPS (30);
 
-	// Variables
+	// Drawing variables
+	float screen_width;
+	float screen_height;
 	float border;
-	float spacer;
-	int clock_stopped = 0;
-	int add_tenth_second = 0;
-	Time time_zero = {0, 0, 0, 0, 0};
+	int fontSize;
 
+	DisplayBox main_clock_box;
+	DisplayBox shot_clock_box;
+	DisplayBox period_box;
+
+	DisplayBox home_score_box;
+	DisplayBox visitor_score_box;
+	DisplayBox home_fouls_box;
+	DisplayBox visitor_fouls_box;
+	DisplayBox home_tol_box;
+	DisplayBox visitor_tol_box;
+
+	// Control variables
+	int clock_stopped = 1;
+	int add_tenth_second = 1;
+	int team = HOME;
+	Mode change_mode = SCORE;
+
+	// Display variables
 	Time main_clock = {3, 1, 0, 0, 0};
 	Time shot_clock = {0, 0, 0, 0, 0};
-	int home_score = 0;
-	int visitor_score = 0;
-	int home_fouls = 0;
-	int visitor_fouls = 0;
-	int home_tol = 5;
-	int visitor_tol = 5;
-	int home_bonus = 0;
-	int visitor_bonus = 0;
-	Possession possession_arrow = NOT_SET;
+	int score[] = {0, 0};
+	int fouls[] = {0, 0};
+
+	int tol[] = {5, 5};
+
+	// Other variables
+	Time time_zero = {0, 0, 0, 0, 0};
 
 	// Audio
 	InitAudioDevice ();
@@ -136,16 +164,75 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 		//-----------------------------------------------------------------------------------------
 
 		// Start/stop clock
-		if (IsKeyPressed (KEY_SPACE))
+		//----------------------------------------------------------------
+		if (IsKeyPressed (KEY_START_STOP_CLOCK))
 		{
 			if (clock_stopped)
 				clock_stopped = 0;
 			else
 				clock_stopped = 1;
 		}
+		// Update clock
+		if (!clock_stopped)
+		{
+			if (add_tenth_second == 0)
+				main_clock = UpdateTime (main_clock);
+			add_tenth_second++;
+			if (add_tenth_second > 2)
+				add_tenth_second = 0;
+		}
+		//----------------------------------------------------------------
+
+		// Changing mode
+		//----------------------------------------------------------------
+		// Home or visitor
+		if (IsKeyPressed (KEY_CHANGING_HOME))
+			team = HOME;
+		if (IsKeyPressed (KEY_CHANGING_VISITOR))
+			team = VISITOR;
+		// Score, fouls, TOL
+		if (IsKeyPressed (KEY_CHANGE_MODE_SCORE))
+			change_mode = SCORE;
+		if (IsKeyPressed (KEY_CHANGE_MODE_FOULS))
+			change_mode = FOULS;
+		if (IsKeyPressed (KEY_CHANGE_MODE_TOL))
+			change_mode = TOL;
+		//----------------------------------------------------------------
+
+		// Change score, fouls, TOL
+		//----------------------------------------------------------------
+		switch (change_mode)
+		{
+			case SCORE:
+				if (IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1))
+					score[team] += 1;
+				if (IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2))
+					score[team] += 2;
+				if (IsKeyPressed (KEY_THREE) || IsKeyPressed (KEY_KP_3))
+					score[team] += 3;
+				if (IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD))
+					score[team]++;
+				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && score[team] > 0)
+					score[team]--;
+				break;
+			case FOULS:
+				if (IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD))
+					fouls[team]++;
+				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && fouls[team] > 0)
+					fouls[team]--;
+				break;
+			case TOL:
+				if (IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD))
+					tol[team]++;
+				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && tol[team] > 0)
+					tol[team]--;
+				break;
+		}
+		//----------------------------------------------------------------
 
 		// Game buzzer sound
-		if (IsKeyDown (KEY_H))
+		//----------------------------------------------------------------
+		if (IsKeyDown (KEY_SOUND_BUZZER))
 		{
 			if (!IsSoundPlaying (buzzer_sound))
 				PlaySound (buzzer_sound);
@@ -157,62 +244,86 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 		}
 		else
 			StopSound (buzzer_sound);
+		//----------------------------------------------------------------
 
-		// Update clock
-		if (!clock_stopped)
-		{
-			if (add_tenth_second == 0)
-				main_clock = UpdateTime (main_clock);
-			add_tenth_second++;
-			if (add_tenth_second > 2)
-				add_tenth_second = 0;
-		}
+		//-----------------------------------------------------------------------------------------
+
 
 		// Drawing
 		//-----------------------------------------------------------------------------------------
+
 		BeginDrawing ();
-			float screen_width = (float) GetScreenWidth ();
-			float screen_height = (float) GetScreenHeight ();
+
+			// Update core display variables
+			screen_width = (float) GetScreenWidth ();
+			screen_height = (float) GetScreenHeight ();
 			border = screen_width / 96;
-			spacer = border;
+			fontSize = (int) border * 6;
 			// Draw background rectangle + outline
 			ClearBackground (WHITE);
 			DrawRectangle (border, border, screen_width - (border * 2), screen_height - (border * 2), DARKBLUE);
+
+			// Main Clock
+			//-------------------------------------------------------------------------------------
 			// Draw main clock rectangle + outline
-			float main_clock_width = spacer * 29;
-			float main_clock_height = spacer * 11;
-			float main_clock_x = (screen_width / 2) - (main_clock_width / 2);
-			float main_clock_y = border;
-			DrawRectangle (main_clock_x - border, 0, main_clock_width + (border * 2), main_clock_height + (border * 2), WHITE);
-			DrawRectangle (main_clock_x, main_clock_y, main_clock_width, main_clock_height, BLACK);
+			main_clock_box.width = border * 29;
+			main_clock_box.height = border * 11;
+			main_clock_box.x = (screen_width / 2) - (main_clock_box.width / 2);
+			main_clock_box.y = border;
+			DrawRectangle (main_clock_box.x - border, 0, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
+			DrawRectangle (main_clock_box.x, main_clock_box.y, main_clock_box.width, main_clock_box.height, BLACK);
 			// Draw main clock digits
 			if (main_clock.ten_minutes == 0 && main_clock.minutes == 0)
 			{
 				// Less than one minute
 				if (main_clock.ten_seconds == 0)
-					DrawDigit (11, main_clock_x + spacer, spacer * 2, spacer * 5, RED, 1);
+					DrawDigit (11, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
-					DrawDigit (main_clock.ten_seconds, main_clock_x + spacer, spacer * 2, spacer * 5, RED, 1);
-				DrawDigit (main_clock.seconds, main_clock_x + (spacer * 7.5f), spacer * 2, spacer * 5, RED, 1);
-				DrawDigit (main_clock.tenth_seconds, main_clock_x + (spacer * 16.5f), spacer * 2, spacer * 5, RED, 1);
-				DrawDigit (11, main_clock_x + (spacer * 23), spacer * 2, spacer * 5, RED, 1);
-				DrawRectangle (main_clock_x + (spacer * 14), main_clock_y + (spacer * 2.5f), spacer, spacer, DARKDARKGRAY);
-				DrawRectangle (main_clock_x + (spacer * 14), main_clock_y + (spacer * 7.5f), spacer, spacer, RED);
+					DrawDigit (main_clock.ten_seconds, main_clock_box.x + border, border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock.seconds, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock.tenth_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
+				DrawDigit (11, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
+				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 2.5f), border, border, DARKDARKGRAY);
+				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 7.5f), border, border, RED);
 			}
 			else
 			{
 				// More than one minute
 				if (main_clock.ten_minutes == 0)
-					DrawDigit (11, main_clock_x + spacer, spacer * 2, spacer * 5, RED, 1);
+					DrawDigit (11, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
-					DrawDigit (main_clock.ten_minutes, main_clock_x + spacer, spacer * 2, spacer * 5, RED, 1);
-				DrawDigit (main_clock.minutes, main_clock_x + (spacer * 7.5f), spacer * 2, spacer * 5, RED,1 );
-				DrawDigit (main_clock.ten_seconds, main_clock_x + (spacer * 16.5f), spacer * 2, spacer * 5, RED,1 );
-				DrawDigit (main_clock.seconds, main_clock_x + (spacer * 23), spacer * 2, spacer * 5, RED, 1);
-				DrawRectangle (main_clock_x + (spacer * 14), main_clock_y + (spacer * 2.5f), spacer, spacer, RED);
-				DrawRectangle (main_clock_x + (spacer * 14), main_clock_y + (spacer * 7.5f), spacer, spacer, RED);
+					DrawDigit (main_clock.ten_minutes, main_clock_box.x + border, border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock.minutes, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED,1 );
+				DrawDigit (main_clock.ten_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock.seconds, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
+				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 2.5f), border, border, RED);
+				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 7.5f), border, border, RED);
 			}
+			//-------------------------------------------------------------------------------------
+
+			// Scoreboards
+			//-------------------------------------------------------------------------------------
+			// Home/visitor labels
+			DrawText
+			(
+				"HOME",
+				(int) ((main_clock_box.x / 2) - ((float) MeasureText ("HOME", fontSize) / 2)),
+				(int) ((((border * 2) + main_clock_box.y + main_clock_box.height) / 2) - (fontSize / 2)),
+				fontSize,
+				WHITE
+			);
+			DrawText
+			(
+				"VISITOR",
+				(int) ((((screen_width - border) + (main_clock_box.x + main_clock_box.width + border)) / 2) - ((float) MeasureText ("VISITOR", fontSize) / 2)),
+				(int) ((((border * 2) + main_clock_box.y + main_clock_box.height) / 2) - (fontSize / 2)),
+				fontSize,
+				WHITE
+			);
+			//-------------------------------------------------------------------------------------
+
 		EndDrawing ();
+
 	}
 
 	// De-Initialization
