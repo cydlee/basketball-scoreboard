@@ -649,12 +649,9 @@ void DrawDigit (int digit, float posX, float posY, float width, Color color, int
 	DrawRectangleRec (top_right, top_right_color);
 	DrawRectangleRec (bottom_right, bottom_right_color);
 	// Draw Corners
-	if (use_all)
-	{
-		DrawRectangleRec (top_left_corner, top_left_corner_color);
-		DrawRectangleRec (middle_left_corner, middle_left_corner_color);
-		DrawRectangleRec (bottom_left_corner, bottom_left_corner_color);
-	}
+	DrawRectangleRec (top_left_corner, top_left_corner_color);
+	DrawRectangleRec (middle_left_corner, middle_left_corner_color);
+	DrawRectangleRec (bottom_left_corner, bottom_left_corner_color);
 	DrawRectangleRec (top_right_corner, top_right_corner_color);
 	DrawRectangleRec (middle_right_corner, middle_right_corner_color);
 	DrawRectangleRec (bottom_right_corner, bottom_right_corner_color);
