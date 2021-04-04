@@ -1,5 +1,7 @@
 # NFHS Basketball Scoreboard
-Currently only supports Boys' Basketball (I hardcoded the times for shotclock and other things). I might add support for config files in the future.
+Basketball scoreboard for high school basketball
 
 ## Build (Ubuntu-based Linux distros)
-`gcc main.c -o scoreboard`
+First, set up Raylib. GNU/Linux guide is <a href="">here</a>. <br>
+Then, run `./build.sh`. <br>
+I have no idea how to compile for other platforms.
