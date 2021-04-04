@@ -103,7 +103,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	// Window
 	SetConfigFlags (FLAG_WINDOW_RESIZABLE);
 	InitWindow (1920, 1080, "Basketball Scoreboard");
-	SetTargetFPS (60);
+	SetTargetFPS (30);
 
 	// Variables
 	float border;
@@ -164,7 +164,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			if (add_tenth_second == 0)
 				main_clock = UpdateTime (main_clock);
 			add_tenth_second++;
-			if (add_tenth_second > 5)
+			if (add_tenth_second > 2)
 				add_tenth_second = 0;
 		}
 
