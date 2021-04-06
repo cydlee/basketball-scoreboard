@@ -19,6 +19,25 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
 
+
+===================================================================================================
+
+TABLE OF CONTENTS:
+# Option parsing
+# Version message
+# Initialize
+# Loop
+	## Clock controls
+	## Changing Mode
+	## Change score, fouls, TOL
+	## Game buzzer sound
+	## Drawing
+		### Main clock
+		### Shot clock
+		### Period
+		### Score displays
+# De-initialization
+
 **************************************************************************************************/
 
 #include <stdlib.h>
@@ -36,6 +55,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
 #define KEY_SOUND_BUZZER        KEY_G
 #define KEY_CHANGING_HOME       KEY_H
 #define KEY_CHANGING_VISITOR    KEY_V
+#define KEY_CHANGE_MODE_PERIOD  KEY_P
 #define KEY_CHANGE_MODE_SCORE   KEY_S
 #define KEY_CHANGE_MODE_FOULS   KEY_F
 #define KEY_CHANGE_MODE_TOL     KEY_T
@@ -48,7 +68,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
 
 typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seconds; } Time;
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
-typedef enum Mode { SCORE = 0, FOULS, TOL } Mode;
+typedef enum Mode { SCORE = 0, FOULS, TOL, PERIOD } Mode;
 
 int IsTimeEqual (Time time1, Time time2);
 Time UpdateTime (Time time);
@@ -58,7 +78,7 @@ static int version_flag;
 
 int main (int argc, char* argv[])
 {
-	// Option Parsing
+	// # Option parsing
 	//---------------------------------------------------------------------------------------------
 	int c;
 	while (1)
@@ -85,8 +105,10 @@ int main (int argc, char* argv[])
 				abort ();
 		}
 	}
+	//---------------------------------------------------------------------------------------------
 
-	// Version message
+
+	// # Version message
 	//---------------------------------------------------------------------------------------------
 	if (version_flag)
 	{
@@ -110,8 +132,10 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 ", stdout);
 		return EXIT_SUCCESS;
 	}
+	//---------------------------------------------------------------------------------------------
 
-	// Initialize
+
+	// # Initialize
 	//---------------------------------------------------------------------------------------------
 
 	// Window
@@ -124,6 +148,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	float screen_height;
 	float border;
 	int fontSize;
+	int hvlabel_y;
 
 	DisplayBox main_clock_box;
 	DisplayBox shot_clock_box;
@@ -147,8 +172,8 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	Time shot_clock = {0, 0, 3, 5, 0};
 	int score[] = {0, 0};
 	int fouls[] = {0, 0};
-
 	int tol[] = {5, 5};
+	int period = 0;
 
 	// Other variables
 	Time time_zero = {0, 0, 0, 0, 0};
@@ -159,14 +184,14 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	InitAudioDevice ();
 	Sound buzzer_sound = LoadSound ("buzzer.ogg");
 
-	// Loop
+	//---------------------------------------------------------------------------------------------
+
+
+	// # Loop
 	//---------------------------------------------------------------------------------------------
 	while (!WindowShouldClose ())
 	{
-		// Inputs and updating data
-		//-----------------------------------------------------------------------------------------
-
-		// Clock controls
+		// ## Clock controls
 		//----------------------------------------------------------------
 		// Start/stop clock
 		if (IsKeyPressed (KEY_START_STOP_CLOCK))
@@ -193,54 +218,62 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			shot_clock = time_35;
 		//----------------------------------------------------------------
 
-		// Changing mode
+		// ## Changing mode
 		//----------------------------------------------------------------
 		// Home or visitor
 		if (IsKeyPressed (KEY_CHANGING_HOME))
 			team = HOME;
 		if (IsKeyPressed (KEY_CHANGING_VISITOR))
 			team = VISITOR;
-		// Score, fouls, TOL
+		// Score, fouls, TOL, period
 		if (IsKeyPressed (KEY_CHANGE_MODE_SCORE))
 			change_mode = SCORE;
 		if (IsKeyPressed (KEY_CHANGE_MODE_FOULS))
 			change_mode = FOULS;
 		if (IsKeyPressed (KEY_CHANGE_MODE_TOL))
 			change_mode = TOL;
+		if (IsKeyPressed (KEY_CHANGE_MODE_PERIOD))
+			change_mode = PERIOD;
 		//----------------------------------------------------------------
 
-		// Change score, fouls, TOL
+		// ## Change score, fouls, TOL
 		//----------------------------------------------------------------
 		switch (change_mode)
 		{
 			case SCORE:
-				if (IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1))
+				if ((IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1)) && score[team] + 1 < 200)
 					score[team] += 1;
-				if (IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2))
+				if ((IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2)) && score[team] + 2 < 200)
 					score[team] += 2;
-				if (IsKeyPressed (KEY_THREE) || IsKeyPressed (KEY_KP_3))
+				if ((IsKeyPressed (KEY_THREE) || IsKeyPressed (KEY_KP_3)) && score[team] + 3 < 200)
 					score[team] += 3;
-				if (IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD))
+				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && score[team] + 1 < 200)
 					score[team]++;
 				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && score[team] > 0)
 					score[team]--;
 				break;
 			case FOULS:
-				if (IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD))
+				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && fouls[team] < 19)
 					fouls[team]++;
 				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && fouls[team] > 0)
 					fouls[team]--;
 				break;
 			case TOL:
-				if (IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD))
+				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && tol[team] < 9)
 					tol[team]++;
 				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && tol[team] > 0)
 					tol[team]--;
 				break;
+			case PERIOD:
+				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && period < 9)
+					period++;
+				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && period > -1)
+					period--;
+				break;
 		}
 		//----------------------------------------------------------------
 
-		// Game buzzer sound
+		// ## Game buzzer sound
 		//----------------------------------------------------------------
 		if (IsKeyDown (KEY_SOUND_BUZZER))
 		{
@@ -256,10 +289,8 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			StopSound (buzzer_sound);
 		//----------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------------------
 
-
-		// Drawing
+		// ## Drawing
 		//-----------------------------------------------------------------------------------------
 
 		BeginDrawing ();
@@ -273,7 +304,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			ClearBackground (WHITE);
 			DrawRectangle (border, border, screen_width - (border * 2), screen_height - (border * 2), DARKBLUE);
 
-			// Main Clock
+			// ### Main clock
 			//-------------------------------------------------------------------------------------
 			// Update box
 			main_clock_box.width = border * 29;
@@ -288,12 +319,12 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			{
 				// Less than one minute
 				if (main_clock.ten_seconds == 0)
-					DrawDigit (11, main_clock_box.x + border, border * 2, border * 5, RED, 1);
+					DrawDigit (-1, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
 					DrawDigit (main_clock.ten_seconds, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				DrawDigit (main_clock.seconds, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
 				DrawDigit (main_clock.tenth_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
-				DrawDigit (11, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
+				DrawDigit (-1, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 2.5f), border, border, DARKDARKGRAY);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 7.5f), border, border, RED);
 			}
@@ -301,7 +332,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			{
 				// More than one minute
 				if (main_clock.ten_minutes == 0)
-					DrawDigit (11, main_clock_box.x + border, border * 2, border * 5, RED, 1);
+					DrawDigit (-1, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
 					DrawDigit (main_clock.ten_minutes, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				DrawDigit (main_clock.minutes, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
@@ -312,13 +343,13 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			}
 			//-------------------------------------------------------------------------------------
 			
-			// Shot clock
+			// ### Shot clock
 			//-------------------------------------------------------------------------------------
 			// Update box
-			shot_clock_box.width = border * 15;
+			shot_clock_box.width = border * 14;
 			shot_clock_box.height = border * 11;
 			shot_clock_box.x = (screen_width / 2) - (shot_clock_box.width / 2);
-			shot_clock_box.y = main_clock_box.y + main_clock_box.height + (border * 5);
+			shot_clock_box.y = screen_height - shot_clock_box.height - (border * 5);
 			// Draw boxes
 			DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), WHITE);
 			DrawRectangle (shot_clock_box.x, shot_clock_box.y, shot_clock_box.width, shot_clock_box.height, BLACK);
@@ -327,44 +358,97 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			{
 				// Less than ten seconds
 				DrawDigit (shot_clock.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawDigit (shot_clock.tenth_seconds, shot_clock_box.x + (border * 9), shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y + (border * 7.5f), border, border, GREEN);
+				DrawDigit (shot_clock.tenth_seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, GREEN);
 			}
 			else
 			{
 				// More than ten seconds
 				DrawDigit (shot_clock.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawDigit (shot_clock.seconds, shot_clock_box.x + (border * 9), shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
+				DrawDigit (shot_clock.seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
 			}
 			//-------------------------------------------------------------------------------------
 
-			// Scoreboards
+			// ### Period
 			//-------------------------------------------------------------------------------------
-			// Home/visitor labels
+			// Update box
+			period_box.width = border * 7;
+			period_box.height = border * 11;
+			period_box.x = (screen_width / 2) - (period_box.width / 2);
+			period_box.y = (((shot_clock_box.y - border) + (main_clock_box.y + main_clock_box.height + border)) / 2) - (period_box.height / 2);
+			// Draw boxes
+			DrawRectangle (period_box.x - border, period_box.y - border, period_box.width + (border * 2), period_box.height + (border * 2), WHITE);
+			DrawRectangle (period_box.x, period_box.y, period_box.width, period_box.height, BLACK);
+			// Draw digit
+			DrawDigit (period, period_box.x + border, period_box.y + border, border * 5, ORANGE, 1);
+			//-------------------------------------------------------------------------------------
+
+			// ### Score displays
+			//-------------------------------------------------------------------------------------
+			// Label y value
+			hvlabel_y = (int) ((((border * 2) + main_clock_box.y + main_clock_box.height) / 2) - (fontSize / 2));
+
+			// Home label
 			DrawText
 			(
 				"HOME",
 				(int) ((main_clock_box.x / 2) - ((float) MeasureText ("HOME", fontSize) / 2)),
-				(int) ((((border * 2) + main_clock_box.y + main_clock_box.height) / 2) - (fontSize / 2)),
+				hvlabel_y,
 				fontSize,
 				WHITE
 			);
+			// Update home score box
+			home_score_box.width = border * 16;
+			home_score_box.height = border * 11;
+			home_score_box.x = (main_clock_box.x / 2) - (home_score_box.width / 2);
+			home_score_box.y = (float) hvlabel_y + (float) fontSize + (border * 4);
+			// Draw home score box
+			DrawRectangle (home_score_box.x - border, home_score_box.y - border, home_score_box.width + (border * 2), home_score_box.height + (border * 2), WHITE);
+			DrawRectangle (home_score_box.x, home_score_box.y, home_score_box.width, home_score_box.height, BLACK);
+			// Draw home score digits
+			DrawDigit (score[HOME] / 100, home_score_box.x - (border * 3), home_score_box.y + border, border * 5, YELLOW, 0);
+			if (score[HOME] < 10)
+				DrawDigit (-1, home_score_box.x + (border * 3.5f), home_score_box.y + border, border * 5, YELLOW, 1);
+			else
+				DrawDigit ((score[HOME] % 100) / 10, home_score_box.x + (border * 3.5f), home_score_box.y + border, border * 5, YELLOW, 1);
+			DrawDigit (score[HOME] % 10, home_score_box.x + (border * 10), home_score_box.y + border, border * 5, YELLOW, 1);
+
+			// Visitor label
 			DrawText
 			(
 				"VISITOR",
 				(int) ((((screen_width - border) + (main_clock_box.x + main_clock_box.width + border)) / 2) - ((float) MeasureText ("VISITOR", fontSize) / 2)),
-				(int) ((((border * 2) + main_clock_box.y + main_clock_box.height) / 2) - (fontSize / 2)),
+				hvlabel_y,
 				fontSize,
 				WHITE
 			);
+			// Update visitor score box
+			visitor_score_box.width = border * 16;
+			visitor_score_box.height = border * 11;
+			visitor_score_box.x = (((screen_width - border) + (main_clock_box.x + main_clock_box.width + border)) / 2) - (visitor_score_box.width / 2);
+			visitor_score_box.y = (float) hvlabel_y + (float) fontSize + (border * 4);
+			// Draw visitor score box
+			DrawRectangle (visitor_score_box.x - border, visitor_score_box.y - border, visitor_score_box.width + (border * 2), visitor_score_box.height + (border * 2), WHITE);
+			DrawRectangle (visitor_score_box.x, visitor_score_box.y, visitor_score_box.width, visitor_score_box.height, BLACK);
+			// Draw visitor score digits
+			DrawDigit (score[VISITOR] / 100, visitor_score_box.x - (border * 3), visitor_score_box.y + border, border * 5, YELLOW, 0);
+			if (score[VISITOR] < 10)
+				DrawDigit (-1, visitor_score_box.x + (border * 3.5f), visitor_score_box.y + border, border * 5, YELLOW, 1);
+			else
+				DrawDigit ((score[VISITOR] % 100) / 10, visitor_score_box.x + (border * 3.5f), visitor_score_box.y + border, border * 5, YELLOW, 1);
+			DrawDigit (score[VISITOR] % 10, visitor_score_box.x + (border * 10), visitor_score_box.y + border, border * 5, YELLOW, 1);
 			//-------------------------------------------------------------------------------------
 
 		EndDrawing ();
 
-	}
+		//-----------------------------------------------------------------------------------------
 
-	// De-Initialization
+	}
+	//---------------------------------------------------------------------------------------------
+
+
+	// # De-initialization
 	//---------------------------------------------------------------------------------------------
 
 	// Audio
@@ -649,9 +733,12 @@ void DrawDigit (int digit, float posX, float posY, float width, Color color, int
 	DrawRectangleRec (top_right, top_right_color);
 	DrawRectangleRec (bottom_right, bottom_right_color);
 	// Draw Corners
-	DrawRectangleRec (top_left_corner, top_left_corner_color);
-	DrawRectangleRec (middle_left_corner, middle_left_corner_color);
-	DrawRectangleRec (bottom_left_corner, bottom_left_corner_color);
+	if (use_all)
+	{
+		DrawRectangleRec (top_left_corner, top_left_corner_color);
+		DrawRectangleRec (middle_left_corner, middle_left_corner_color);
+		DrawRectangleRec (bottom_left_corner, bottom_left_corner_color);
+	}
 	DrawRectangleRec (top_right_corner, top_right_corner_color);
 	DrawRectangleRec (middle_right_corner, middle_right_corner_color);
 	DrawRectangleRec (bottom_right_corner, bottom_right_corner_color);
