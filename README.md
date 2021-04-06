@@ -17,13 +17,14 @@ Reset Shot Clock -- Left Shift
 
 Sound Buzzer -- G
 
-Changing score, fouls, and time outs left for each team is by selecting the team and type of data to change, and then pressing +/- or 1/2/3 to change the values.
+Changing score, fouls, and time outs left for each team is by selecting the team and type of data to change, and then pressing +/- or 1/2/3 to change the values. For changing the period, the selected team can be either home or visitor.
 
 Set Selected Team to Home -- H <br>
 Set Selected Team to Visitor -- V <br>
 Set Selected Type to Score -- S <br>
 Set Selected Type to Fouls -- F <br>
-Set Selected Type to TOL -- T
+Set Selected Type to TOL -- T <br>
+Set Selected Type to Period -- P
 
 (SCORE ONLY) <br>
 Add 1 -- 1 <br>
