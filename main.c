@@ -36,6 +36,8 @@ TABLE OF CONTENTS:
 		### Shot clock
 		### Period
 		### Score displays
+		### Foul displays
+		### TOL displays
 # De-initialization
 
 **************************************************************************************************/
@@ -50,6 +52,7 @@ TABLE OF CONTENTS:
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
 // Input keys
+#define KEY_TOGGLE_FULLSCREEN   KEY_F11
 #define KEY_START_STOP_CLOCK    KEY_SPACE
 #define KEY_RESET_SHOT_CLOCK    KEY_LEFT_SHIFT
 #define KEY_SOUND_BUZZER        KEY_G
@@ -60,9 +63,8 @@ TABLE OF CONTENTS:
 #define KEY_CHANGE_MODE_FOULS   KEY_F
 #define KEY_CHANGE_MODE_TOL     KEY_T
 
-#define NOT_SET 0
-#define HOME    1
-#define VISITOR 2
+#define HOME    0
+#define VISITOR 1
 
 #define DARKDARKGRAY (Color){25, 25, 25, 255}
 
@@ -70,9 +72,9 @@ typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seco
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
 typedef enum Mode { SCORE = 0, FOULS, TOL, PERIOD } Mode;
 
-int IsTimeEqual (Time time1, Time time2);
-Time UpdateTime (Time time);
-void DrawDigit (int digit, float posX, float posY, float width, Color color, int use_all);
+int TimeToInt (Time time); // Returns time in tenths of seconds (int)
+Time UpdateTime (Time time); // Increments time by one tenth second
+void DrawDigit (int digit, float posX, float posY, float width, Color color, int use_all); // Draw a digit on the scoreboard
 
 static int version_flag;
 
@@ -144,15 +146,10 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	SetTargetFPS (30);
 
 	// Drawing variables
-	float screen_width;
-	float screen_height;
-	float border;
-	int fontSize;
-	int hvlabel_y;
+	float screen_width, screen_height, border;
+	int fontSize, period_label_y, hvlabel_y, fouls_label_y;
 
-	DisplayBox main_clock_box;
-	DisplayBox shot_clock_box;
-	DisplayBox period_box;
+	DisplayBox main_clock_box, shot_clock_box, period_box;
 
 	DisplayBox home_score_box;
 	DisplayBox visitor_score_box;
@@ -176,9 +173,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	int period = 0;
 
 	// Other variables
-	Time time_zero = {0, 0, 0, 0, 0};
 	Time time_35 = {0, 0, 3, 5, 0};
-	Time time_8min = {0, 8, 0, 0, 0};
 
 	// Audio
 	InitAudioDevice ();
@@ -191,6 +186,10 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	//---------------------------------------------------------------------------------------------
 	while (!WindowShouldClose ())
 	{
+		// Toggle fullscreen
+		if (IsKeyPressed (KEY_TOGGLE_FULLSCREEN))
+			ToggleFullscreen ();
+
 		// ## Clock controls
 		//----------------------------------------------------------------
 		// Start/stop clock
@@ -202,7 +201,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				clock_stopped = 1;
 		}
 		// Update clock
-		if (!clock_stopped && !IsTimeEqual (shot_clock, time_zero))
+		if (!clock_stopped && TimeToInt (shot_clock) != 0)
 		{
 			if (add_tenth_second == 0)
 			{
@@ -280,7 +279,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			if (!IsSoundPlaying (buzzer_sound))
 				PlaySound (buzzer_sound);
 		}
-		else if (!clock_stopped && (IsTimeEqual (main_clock, time_zero) || IsTimeEqual (shot_clock, time_zero)))
+		else if (!clock_stopped && (TimeToInt (main_clock) == 0 || TimeToInt (shot_clock) == 0))
 		{
 			if (!IsSoundPlaying (buzzer_sound))
 				PlaySound (buzzer_sound);
@@ -375,8 +374,18 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			// Update box
 			period_box.width = border * 7;
 			period_box.height = border * 11;
+			period_label_y = (int) ((((shot_clock_box.y - border) + (main_clock_box.y + main_clock_box.height + border)) / 2) - ((period_box.height + border + (fontSize / 3)) / 2));
 			period_box.x = (screen_width / 2) - (period_box.width / 2);
-			period_box.y = (((shot_clock_box.y - border) + (main_clock_box.y + main_clock_box.height + border)) / 2) - (period_box.height / 2);
+			period_box.y = (float) period_label_y + (fontSize / 3) + border;
+			// Draw label
+			DrawText
+			(
+				"PERIOD",
+				(int) ((period_box.x + (period_box.width / 2)) - ((float) MeasureText ("PERIOD", fontSize / 3) / 2)),
+				period_label_y,
+				fontSize / 3,
+				WHITE
+			);
 			// Draw boxes
 			DrawRectangle (period_box.x - border, period_box.y - border, period_box.width + (border * 2), period_box.height + (border * 2), WHITE);
 			DrawRectangle (period_box.x, period_box.y, period_box.width, period_box.height, BLACK);
@@ -407,12 +416,12 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			DrawRectangle (home_score_box.x - border, home_score_box.y - border, home_score_box.width + (border * 2), home_score_box.height + (border * 2), WHITE);
 			DrawRectangle (home_score_box.x, home_score_box.y, home_score_box.width, home_score_box.height, BLACK);
 			// Draw home score digits
-			DrawDigit (score[HOME] / 100, home_score_box.x - (border * 3), home_score_box.y + border, border * 5, YELLOW, 0);
+			DrawDigit (score[HOME] / 100, home_score_box.x - (border * 3), home_score_box.y + border, border * 5, GOLD, 0);
 			if (score[HOME] < 10)
-				DrawDigit (-1, home_score_box.x + (border * 3.5f), home_score_box.y + border, border * 5, YELLOW, 1);
+				DrawDigit (-1, home_score_box.x + (border * 3.5f), home_score_box.y + border, border * 5, GOLD, 1);
 			else
-				DrawDigit ((score[HOME] % 100) / 10, home_score_box.x + (border * 3.5f), home_score_box.y + border, border * 5, YELLOW, 1);
-			DrawDigit (score[HOME] % 10, home_score_box.x + (border * 10), home_score_box.y + border, border * 5, YELLOW, 1);
+				DrawDigit ((score[HOME] % 100) / 10, home_score_box.x + (border * 3.5f), home_score_box.y + border, border * 5, GOLD, 1);
+			DrawDigit (score[HOME] % 10, home_score_box.x + (border * 10), home_score_box.y + border, border * 5, GOLD, 1);
 
 			// Visitor label
 			DrawText
@@ -432,12 +441,113 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			DrawRectangle (visitor_score_box.x - border, visitor_score_box.y - border, visitor_score_box.width + (border * 2), visitor_score_box.height + (border * 2), WHITE);
 			DrawRectangle (visitor_score_box.x, visitor_score_box.y, visitor_score_box.width, visitor_score_box.height, BLACK);
 			// Draw visitor score digits
-			DrawDigit (score[VISITOR] / 100, visitor_score_box.x - (border * 3), visitor_score_box.y + border, border * 5, YELLOW, 0);
+			DrawDigit (score[VISITOR] / 100, visitor_score_box.x - (border * 3), visitor_score_box.y + border, border * 5, GOLD, 0);
 			if (score[VISITOR] < 10)
-				DrawDigit (-1, visitor_score_box.x + (border * 3.5f), visitor_score_box.y + border, border * 5, YELLOW, 1);
+				DrawDigit (-1, visitor_score_box.x + (border * 3.5f), visitor_score_box.y + border, border * 5, GOLD, 1);
 			else
-				DrawDigit ((score[VISITOR] % 100) / 10, visitor_score_box.x + (border * 3.5f), visitor_score_box.y + border, border * 5, YELLOW, 1);
-			DrawDigit (score[VISITOR] % 10, visitor_score_box.x + (border * 10), visitor_score_box.y + border, border * 5, YELLOW, 1);
+				DrawDigit ((score[VISITOR] % 100) / 10, visitor_score_box.x + (border * 3.5f), visitor_score_box.y + border, border * 5, GOLD, 1);
+			DrawDigit (score[VISITOR] % 10, visitor_score_box.x + (border * 10), visitor_score_box.y + border, border * 5, GOLD, 1);
+			//-------------------------------------------------------------------------------------
+
+
+			// ### Foul displays
+			//-------------------------------------------------------------------------------------
+			// Update fouls label y value
+			fouls_label_y = (int) (home_score_box.y + home_score_box.height + (border * 4));
+
+			// Update home fouls box
+			home_fouls_box.width = border * 10;
+			home_fouls_box.height = border * 11;
+			home_fouls_box.x = home_score_box.x;
+			home_fouls_box.y = (float) fouls_label_y + (fontSize / 2) + (border * 2);
+			// Home fouls label
+			DrawText
+			(
+				"FOULS",
+				(int) ((home_fouls_box.x + (home_fouls_box.width / 2)) - ((float) MeasureText ("FOULS", fontSize / 2) / 2)),
+				fouls_label_y,
+				fontSize / 2,
+				WHITE
+			);
+			// Draw home fouls box
+			DrawRectangle (home_fouls_box.x - border, home_fouls_box.y - border, home_fouls_box.width + (border * 2), home_fouls_box.height + (border * 2), WHITE);
+			DrawRectangle (home_fouls_box.x, home_fouls_box.y, home_fouls_box.width, home_fouls_box.height, BLACK);
+			// Draw home fouls digits
+			if (fouls[HOME] < 10)
+				DrawDigit (-1, home_fouls_box.x - (border * 3), home_fouls_box.y + border, border * 5, YELLOW, 0);
+			else
+				DrawDigit ((fouls[HOME] % 100) / 10, home_fouls_box.x - (border * 3), home_fouls_box.y + border, border * 5, YELLOW, 0);
+			DrawDigit (fouls[HOME] % 10, home_fouls_box.x + (border * 3.5f), home_fouls_box.y + border, border * 5, YELLOW, 1);
+			
+			// Update visitor fouls box
+			visitor_fouls_box.width = border * 10;
+			visitor_fouls_box.height = border * 11;
+			visitor_fouls_box.x = (visitor_score_box.x + visitor_score_box.width) - visitor_fouls_box.width;
+			visitor_fouls_box.y = (float) fouls_label_y + (fontSize / 2) + (border * 2);
+			// Home fouls label
+			DrawText
+			(
+				"FOULS",
+				(int) ((visitor_fouls_box.x + (visitor_fouls_box.width / 2)) - ((float) MeasureText ("FOULS", fontSize / 2) / 2)),
+				fouls_label_y,
+				fontSize / 2,
+				WHITE
+			);
+			// Draw visitor fouls box
+			DrawRectangle (visitor_fouls_box.x - border, visitor_fouls_box.y - border, visitor_fouls_box.width + (border * 2), visitor_fouls_box.height + (border * 2), WHITE);
+			DrawRectangle (visitor_fouls_box.x, visitor_fouls_box.y, visitor_fouls_box.width, visitor_fouls_box.height, BLACK);
+			// Draw visitor fouls digits
+			if (fouls[VISITOR] < 10)
+				DrawDigit (-1, visitor_fouls_box.x - (border * 3), visitor_fouls_box.y + border, border * 5, YELLOW, 0);
+			else
+				DrawDigit ((fouls[VISITOR] % 100) / 10, visitor_fouls_box.x - (border * 3), visitor_fouls_box.y + border, border * 5, YELLOW, 0);
+			DrawDigit (fouls[VISITOR] % 10, visitor_fouls_box.x + (border * 3.5f), visitor_fouls_box.y + border, border * 5, YELLOW, 1);
+			//-------------------------------------------------------------------------------------
+
+
+			// ### TOL displays
+			//-------------------------------------------------------------------------------------
+
+			// Update home TOL box
+			home_tol_box.width = border * 7;
+			home_tol_box.height = border * 11;
+			home_tol_box.x = home_fouls_box.x + home_fouls_box.width + (border * 5);
+			home_tol_box.y = home_fouls_box.y;
+			// Home TOL label
+			DrawText
+			(
+				"T.O.L.",
+				(int) ((home_tol_box.x + (home_tol_box.width / 2)) - ((float) MeasureText ("T.O.L.", fontSize / 2) / 2)),
+				fouls_label_y,
+				fontSize / 2,
+				WHITE
+			);
+			// Draw home TOL box
+			DrawRectangle (home_tol_box.x - border, home_tol_box.y - border, home_tol_box.width + (border * 2), home_tol_box.height + (border * 2), WHITE);
+			DrawRectangle (home_tol_box.x, home_tol_box.y, home_tol_box.width, home_tol_box.height, BLACK);
+			// Draw home TOL digit
+			DrawDigit (tol[HOME], home_tol_box.x + border, home_tol_box.y + border, border * 5, YELLOW, 1);
+
+			// Update visitor TOL box
+			visitor_tol_box.width = border * 7;
+			visitor_tol_box.height = border * 11;
+			visitor_tol_box.x = visitor_fouls_box.x - visitor_tol_box.width - (border * 5);
+			visitor_tol_box.y = visitor_fouls_box.y;
+			// Home TOL label
+			DrawText
+			(
+				"T.O.L.",
+				(int) ((visitor_tol_box.x + (visitor_tol_box.width / 2)) - ((float) MeasureText ("T.O.L.", fontSize / 2) / 2)),
+				fouls_label_y,
+				fontSize / 2,
+				WHITE
+			);
+			// Draw visitor TOL box
+			DrawRectangle (visitor_tol_box.x - border, visitor_tol_box.y - border, visitor_tol_box.width + (border * 2), visitor_tol_box.height + (border * 2), WHITE);
+			DrawRectangle (visitor_tol_box.x, visitor_tol_box.y, visitor_tol_box.width, visitor_tol_box.height, BLACK);
+			// Draw visitor TOL digit
+			DrawDigit (tol[VISITOR], visitor_tol_box.x + border, visitor_tol_box.y + border, border * 5, YELLOW, 1);
+
 			//-------------------------------------------------------------------------------------
 
 		EndDrawing ();
@@ -461,12 +571,15 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	return EXIT_SUCCESS;
 }
 
-int IsTimeEqual (Time time1, Time time2)
+int TimeToInt (Time time)
 {
-	if (time1.ten_minutes == time2.ten_minutes && time1.minutes == time2.minutes && time1.ten_seconds == time2.ten_seconds && time1.seconds == time2.seconds && time1.tenth_seconds == time2.tenth_seconds)
-		return 1;
-	else
-		return 0;
+	int int_time = 0;
+	int_time += time.tenth_seconds;
+	int_time += time.seconds * 10;
+	int_time += time.ten_seconds * 100;
+	int_time += time.minutes * 600;
+	int_time += time.ten_minutes * 6000;
+	return int_time;
 }
 
 Time UpdateTime (Time time)
