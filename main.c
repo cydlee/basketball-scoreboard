@@ -145,6 +145,10 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	InitWindow (1920, 1080, "Basketball Scoreboard");
 	SetTargetFPS (30);
 
+	// Window icon
+	Image window_icon = LoadImage ("icon.png");
+	SetWindowIcon (window_icon);
+
 	// Drawing variables
 	float screen_width, screen_height, border;
 	int fontSize, period_label_y, hvlabel_y, fouls_label_y;
@@ -564,6 +568,9 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	// Audio
 	UnloadSound (buzzer_sound);
 	CloseAudioDevice ();
+
+	// Window icon
+	UnloadImage (window_icon);
 
 	// Window
 	CloseWindow ();
