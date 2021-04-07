@@ -28,7 +28,7 @@ TABLE OF CONTENTS:
 # Initialize
 # Loop
 	## Clock controls
-	## Changing Mode
+	## Changing mode
 	## Change score, fouls, TOL
 	## Game buzzer sound
 	## Drawing
@@ -70,7 +70,8 @@ TABLE OF CONTENTS:
 
 typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seconds; } Time;
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
-typedef enum Mode { SCORE = 0, FOULS, TOL, PERIOD } Mode;
+typedef enum ChangeType { SCORE = 0, FOULS, TOL, PERIOD } ChangeType;
+typedef enum Mode { CLOCK_STOPPED = 0, CLOCK_RUNNING, EDIT_MODE } Mode;
 
 int TimeToInt (Time time); // Returns time in tenths of seconds (int)
 Time UpdateTime (Time time); // Increments time by one tenth second
@@ -166,7 +167,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	int clock_stopped = 1;
 	int add_tenth_second = 1;
 	int team = HOME;
-	Mode change_mode = SCORE;
+	ChangeType change_type = SCORE;
 
 	// Display variables
 	Time main_clock = {0, 8, 0, 0, 0};
@@ -230,18 +231,18 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			team = VISITOR;
 		// Score, fouls, TOL, period
 		if (IsKeyPressed (KEY_CHANGE_MODE_SCORE))
-			change_mode = SCORE;
+			change_type = SCORE;
 		if (IsKeyPressed (KEY_CHANGE_MODE_FOULS))
-			change_mode = FOULS;
+			change_type = FOULS;
 		if (IsKeyPressed (KEY_CHANGE_MODE_TOL))
-			change_mode = TOL;
+			change_type = TOL;
 		if (IsKeyPressed (KEY_CHANGE_MODE_PERIOD))
-			change_mode = PERIOD;
+			change_type = PERIOD;
 		//----------------------------------------------------------------
 
 		// ## Change score, fouls, TOL
 		//----------------------------------------------------------------
-		switch (change_mode)
+		switch (change_type)
 		{
 			case SCORE:
 				if ((IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1)) && score[team] + 1 < 200)
