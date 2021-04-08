@@ -1,6 +1,6 @@
 /**************************************************************************************************
 
-Basketball Scoreboard 1.0
+Basketball Scoreboard version 1
 Copyright (c) 2021 Cyrus Lee
 
 This program is free software: you can redistribute it and/or modify
@@ -16,9 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-
 Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
-
 
 ===================================================================================================
 
@@ -33,6 +31,7 @@ TABLE OF CONTENTS:
 		### Changing mode
 		### Change score, fouls, TOL
 		### Game buzzer sound
+		### Edit mode
 	## Drawing
 		### Main clock
 		### Shot clock
@@ -50,7 +49,7 @@ TABLE OF CONTENTS:
 #include "raylib.h"
 
 #define NAME "Basketball Scoreboard"
-#define VERSION "1.0"
+#define VERSION "version 1"
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
 // Input keys
@@ -64,15 +63,19 @@ TABLE OF CONTENTS:
 #define KEY_CHANGE_MODE_SCORE   KEY_S
 #define KEY_CHANGE_MODE_FOULS   KEY_F
 #define KEY_CHANGE_MODE_TOL     KEY_T
+// Increment, decrement, score +1/2/3 keybinds are under [Change score, fouls, TOL]
+// Edit mode keybinds are under [Edit mode]
 
 #define HOME    0
 #define VISITOR 1
 
 #define DARKDARKGRAY (Color){25, 25, 25, 255}
+#define DARKRED (Color){130, 33, 55, 255}
 
 typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seconds; } Time;
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
 typedef enum ChangeType { SCORE = 0, FOULS, TOL, PERIOD } ChangeType;
+typedef enum TimerMode { NORMAL = 0, TENTH_SECONDS } TimerMode;
 typedef enum Mode { CLOCK_STOPPED = 0, CLOCK_RUNNING, EDIT_MODE } Mode;
 
 int TimeToInt (Time time); // Returns time in tenths of seconds (int)
@@ -132,7 +135,6 @@ GNU General Public License for more details.\n\
 You should have received a copy of the GNU General Public License\n\
 along with this program. If not, see <https://www.gnu.org/licenses/>.\n\
 \n\
-\n\
 Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 ", stdout);
 		return EXIT_SUCCESS;
@@ -169,18 +171,31 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	int add_tenth_second = 1;
 	int team = HOME;
 	ChangeType change_type = SCORE;
+	TimerMode main_clock_mode = NORMAL;
+	TimerMode shot_clock_mode = NORMAL;
 	Mode scoreboard_mode = CLOCK_STOPPED;
 
-	// Display variables
-	Time main_clock = {0, 8, 0, 0, 9};
-	Time shot_clock = {0, 0, 3, 5, 9};
+	// Game data
+	Time main_clock = {0, 1, 0, 0, 0};
+	Time shot_clock = {0, 0, 3, 5, 0};
 	int score[] = {0, 0};
 	int fouls[] = {0, 0};
 	int tol[] = {5, 5};
 	int period = 0;
 
+	// Display times
+	Time main_clock_display = main_clock;
+	Time shot_clock_display = shot_clock;
+
+	// Edit mode buffers + pointer
+	Time main_clock_buffer = main_clock;
+	Time shot_clock_buffer = shot_clock;
+	int score_buffer[] = {0, 0};
+	int selected_digit = 1;
+	int replace_digit = -1;
+
 	// Other variables
-	Time time_35 = {0, 0, 3, 5, 9};
+	Time time_35 = {0, 0, 3, 5, 0};
 
 	// Audio
 	InitAudioDevice ();
@@ -232,6 +247,15 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// Reset shot clock
 				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
 					shot_clock = time_35;
+				// Check if either clock should be set to tenth_seconds mode
+				if (TimeToInt (main_clock) < 600)
+					main_clock_mode = TENTH_SECONDS;
+				else
+					main_clock_mode = NORMAL;
+				if (TimeToInt (shot_clock) < 100)
+					shot_clock_mode = TENTH_SECONDS;
+				else
+					shot_clock_mode = NORMAL;
 				//----------------------------------------------------------------
 
 				// ### Changing mode
@@ -304,8 +328,176 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				else
 					StopSound (buzzer_sound);
 				//----------------------------------------------------------------
+
+				// Update edit mode buffers and enter edit mode
+				if (scoreboard_mode == CLOCK_STOPPED && (IsKeyPressed (KEY_SLASH) || IsKeyPressed (KEY_BACKSLASH)))
+				{
+					main_clock_buffer = main_clock;
+					shot_clock_buffer = shot_clock;
+					score_buffer[HOME] = score[HOME];
+					score_buffer[VISITOR] = score[VISITOR];
+					selected_digit = 1; // 1-4 = digits 1-4 of the main clock, 5-6 = digits 1-2 of the shot clock
+					replace_digit = -1;
+					scoreboard_mode = EDIT_MODE;
+				}
+
+				// Set clock displays to actual time
+				main_clock_display = main_clock;
+				shot_clock_display = shot_clock;
 				break;
 			case EDIT_MODE:
+				// ### Edit mode
+				//---------------------------------------------------------------------------------
+				// Discard changes and exit edit mode
+				if (IsKeyPressed (KEY_BACKSPACE))
+					scoreboard_mode = CLOCK_STOPPED;
+				// Save changes and exit edit mode
+				if (IsKeyPressed (KEY_ENTER))
+				{
+					main_clock = main_clock_buffer;
+					shot_clock = shot_clock_buffer;
+					score[HOME] = score_buffer[HOME];
+					score[VISITOR] = score_buffer[VISITOR];
+					scoreboard_mode = CLOCK_STOPPED;
+				}
+				// Switch selected digit
+				if (IsKeyPressed (KEY_LEFT) && selected_digit > 1)
+					selected_digit--;
+				if (IsKeyPressed (KEY_RIGHT) && selected_digit < 6)
+					selected_digit++;
+				// Conveniences to jump to shot or main clock quickly (first digit)
+				if (IsKeyPressed (KEY_UP))
+					selected_digit = 1;
+				if (IsKeyPressed (KEY_DOWN))
+					selected_digit = 5;
+				// Flip mode between normal and tenth seconds
+				if (IsKeyPressed (KEY_LEFT_SHIFT))
+				{
+					switch (selected_digit)
+					{
+						case 1:
+						case 2:
+						case 3:
+						case 4:
+							if (main_clock_mode == NORMAL)
+								main_clock_mode = TENTH_SECONDS;
+							else
+								main_clock_mode = NORMAL;
+							break;
+						case 5:
+						case 6:
+							if (shot_clock_mode == NORMAL)
+								shot_clock_mode = TENTH_SECONDS;
+							else
+								shot_clock_mode = NORMAL;
+							break;
+					}
+				}
+				// Change numbers - I cannot find a way to avoid this ugly if-else blob, please make a
+				//                  pull request or issue or something if you find something
+				if (IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1))
+					replace_digit = 1;
+				else if (IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2))
+					replace_digit = 2;
+				else if (IsKeyPressed (KEY_THREE) || IsKeyPressed (KEY_KP_3))
+					replace_digit = 3;
+				else if (IsKeyPressed (KEY_FOUR) || IsKeyPressed (KEY_KP_4))
+					replace_digit = 4;
+				else if (IsKeyPressed (KEY_FIVE) || IsKeyPressed (KEY_KP_5))
+					replace_digit = 5;
+				else if (IsKeyPressed (KEY_SIX) || IsKeyPressed (KEY_KP_6))
+					replace_digit = 6;
+				else if (IsKeyPressed (KEY_SEVEN) || IsKeyPressed (KEY_KP_7))
+					replace_digit = 7;
+				else if (IsKeyPressed (KEY_EIGHT) || IsKeyPressed (KEY_KP_8))
+					replace_digit = 8;
+				else if (IsKeyPressed (KEY_NINE) || IsKeyPressed (KEY_KP_9))
+					replace_digit = 9;
+				else if (IsKeyPressed (KEY_ZERO) || IsKeyPressed (KEY_KP_0))
+					replace_digit = 0;
+				else
+					replace_digit = -1;
+				// Move the selected number into the appropriate place in the edit mode buffers
+				// This if-switch-if-else-switch thing is really ugly too (╯°□°)╯︵ ┻━┻
+				// Really, this code is disgusting and it hurts to write it but I can't think of a better solution
+				if (replace_digit != -1)
+				{
+					switch (selected_digit)
+					{
+						case 1:
+						case 2:
+						case 3:
+						case 4:
+							if (main_clock_mode == NORMAL)
+							{
+								switch (selected_digit)
+								{
+									case 1:
+										main_clock_buffer.ten_minutes = replace_digit;
+										break;
+									case 2:
+										main_clock_buffer.minutes = replace_digit;
+										break;
+									case 3:
+										if (replace_digit < 6)
+											main_clock_buffer.ten_seconds = replace_digit;
+										break;
+									case 4:
+										main_clock_buffer.seconds = replace_digit;
+										break;
+								}
+							}
+							else
+							{
+								switch (selected_digit)
+								{
+									case 1:
+										if (replace_digit < 6)
+											main_clock_buffer.ten_seconds = replace_digit;
+										break;
+									case 2:
+										main_clock_buffer.seconds = replace_digit;
+										break;
+									case 3:
+										main_clock_buffer.tenth_seconds = replace_digit;
+										break;
+									// No case 4: because when it is in tenth seconds mode, the last digit represents nothing
+								}
+							}
+							break;
+						case 5:
+						case 6:
+							if (shot_clock_mode == NORMAL)
+							{
+								switch (selected_digit)
+								{
+									case 5:
+										shot_clock_buffer.ten_seconds = replace_digit;
+										break;
+									case 6:
+										shot_clock_buffer.seconds = replace_digit;
+										break;
+								}
+							}
+							else
+							{
+								switch (selected_digit)
+								{
+									case 5:
+										shot_clock_buffer.seconds = replace_digit;
+										break;
+									case 6:
+										shot_clock_buffer.tenth_seconds = replace_digit;
+										break;
+								}
+							}
+							break;
+					}
+				}
+				// Set display time to edit mode buffer
+				main_clock_display = main_clock_buffer;
+				shot_clock_display = shot_clock_buffer;
+				//---------------------------------------------------------------------------------
 				break;
 		}
 		//-----------------------------------------------------------------------------------------
@@ -335,16 +527,35 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			// Draw boxes
 			DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
 			DrawRectangle (main_clock_box.x, main_clock_box.y, main_clock_box.width, main_clock_box.height, BLACK);
+			// Edit mode
+			if (scoreboard_mode == EDIT_MODE)
+			{
+				switch (selected_digit)
+				{
+					case 1:
+						DrawRectangle (main_clock_box.x, border, border * 7, border * 11, DARKRED);
+						break;
+					case 2:
+						DrawRectangle (main_clock_box.x + (border * 6.5f), border, border * 7, border * 11, DARKRED);
+						break;
+					case 3:
+						DrawRectangle (main_clock_box.x + (border * 15.5f), border, border * 7, border * 11, DARKRED);
+						break;
+					case 4:
+						DrawRectangle (main_clock_box.x + (border * 22), border, border * 7, border * 11, DARKRED);
+						break;
+				}
+			}
 			// Draw digits
-			if (main_clock.ten_minutes == 0 && main_clock.minutes == 0)
+			if (main_clock_mode == TENTH_SECONDS)
 			{
 				// Less than one minute
-				if (main_clock.ten_seconds == 0)
+				if (main_clock_display.ten_seconds == 0)
 					DrawDigit (-1, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
-					DrawDigit (main_clock.ten_seconds, main_clock_box.x + border, border * 2, border * 5, RED, 1);
-				DrawDigit (main_clock.seconds, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
-				DrawDigit (main_clock.tenth_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
+					DrawDigit (main_clock_display.ten_seconds, main_clock_box.x + border, border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock_display.seconds, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock_display.tenth_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
 				DrawDigit (-1, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 2.5f), border, border, DARKDARKGRAY);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 7.5f), border, border, RED);
@@ -352,13 +563,13 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			else
 			{
 				// More than one minute
-				if (main_clock.ten_minutes == 0)
+				if (main_clock_display.ten_minutes == 0)
 					DrawDigit (-1, main_clock_box.x + border, border * 2, border * 5, RED, 1);
 				else
-					DrawDigit (main_clock.ten_minutes, main_clock_box.x + border, border * 2, border * 5, RED, 1);
-				DrawDigit (main_clock.minutes, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
-				DrawDigit (main_clock.ten_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
-				DrawDigit (main_clock.seconds, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
+					DrawDigit (main_clock_display.ten_minutes, main_clock_box.x + border, border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock_display.minutes, main_clock_box.x + (border * 7.5f), border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock_display.ten_seconds, main_clock_box.x + (border * 16.5f), border * 2, border * 5, RED, 1);
+				DrawDigit (main_clock_display.seconds, main_clock_box.x + (border * 23), border * 2, border * 5, RED, 1);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 2.5f), border, border, RED);
 				DrawRectangle (main_clock_box.x + (border * 14), main_clock_box.y + (border * 7.5f), border, border, RED);
 			}
@@ -374,19 +585,32 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			// Draw boxes
 			DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), WHITE);
 			DrawRectangle (shot_clock_box.x, shot_clock_box.y, shot_clock_box.width, shot_clock_box.height, BLACK);
+			// Edit mode
+			if (scoreboard_mode == EDIT_MODE)
+			{
+				switch (selected_digit)
+				{
+					case 5:
+						DrawRectangle (shot_clock_box.x, shot_clock_box.y, border * 7, border * 11, DARKGREEN);
+						break;
+					case 6:
+						DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y, border * 7, border * 11, DARKGREEN);
+						break;
+				}
+			}
 			// Draw digits
-			if (shot_clock.ten_seconds == 0)
+			if (shot_clock_mode == TENTH_SECONDS)
 			{
 				// Less than ten seconds
-				DrawDigit (shot_clock.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawDigit (shot_clock.tenth_seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (shot_clock_display.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (shot_clock_display.tenth_seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
 				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, GREEN);
 			}
 			else
 			{
 				// More than ten seconds
-				DrawDigit (shot_clock.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawDigit (shot_clock.seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (shot_clock_display.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (shot_clock_display.seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
 				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
 			}
 			//-------------------------------------------------------------------------------------
