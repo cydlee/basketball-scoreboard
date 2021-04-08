@@ -27,10 +27,12 @@ TABLE OF CONTENTS:
 # Version message
 # Initialize
 # Loop
-	## Clock controls
-	## Changing mode
-	## Change score, fouls, TOL
-	## Game buzzer sound
+	## Update board logic
+		### Clock running
+		### Clock stopped
+		### Changing mode
+		### Change score, fouls, TOL
+		### Game buzzer sound
 	## Drawing
 		### Main clock
 		### Shot clock
@@ -164,21 +166,21 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	DisplayBox visitor_tol_box;
 
 	// Control variables
-	int clock_stopped = 1;
 	int add_tenth_second = 1;
 	int team = HOME;
 	ChangeType change_type = SCORE;
+	Mode scoreboard_mode = CLOCK_STOPPED;
 
 	// Display variables
-	Time main_clock = {0, 8, 0, 0, 0};
-	Time shot_clock = {0, 0, 3, 5, 0};
+	Time main_clock = {0, 8, 0, 0, 9};
+	Time shot_clock = {0, 0, 3, 5, 9};
 	int score[] = {0, 0};
 	int fouls[] = {0, 0};
 	int tol[] = {5, 5};
 	int period = 0;
 
 	// Other variables
-	Time time_35 = {0, 0, 3, 5, 0};
+	Time time_35 = {0, 0, 3, 5, 9};
 
 	// Audio
 	InitAudioDevice ();
@@ -191,107 +193,122 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	//---------------------------------------------------------------------------------------------
 	while (!WindowShouldClose ())
 	{
+		// ## Update board logic
+		//-----------------------------------------------------------------------------------------
 		// Toggle fullscreen
 		if (IsKeyPressed (KEY_TOGGLE_FULLSCREEN))
 			ToggleFullscreen ();
 
-		// ## Clock controls
-		//----------------------------------------------------------------
-		// Start/stop clock
-		if (IsKeyPressed (KEY_START_STOP_CLOCK))
+		switch (scoreboard_mode)
 		{
-			if (clock_stopped)
-				clock_stopped = 0;
-			else
-				clock_stopped = 1;
-		}
-		// Update clock
-		if (!clock_stopped && TimeToInt (shot_clock) != 0)
-		{
-			if (add_tenth_second == 0)
-			{
-				main_clock = UpdateTime (main_clock);
-				shot_clock = UpdateTime (shot_clock);
-			}
-			add_tenth_second++;
-			if (add_tenth_second > 2)
-				add_tenth_second = 0;
-		}
-		// Reset shot clock
-		if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
-			shot_clock = time_35;
-		//----------------------------------------------------------------
+			case CLOCK_RUNNING:
+				// ### Clock running
+				//----------------------------------------------------------------
+				// Update clock
+				if (TimeToInt (shot_clock) != 0 && TimeToInt (main_clock) != 0)
+				{
+					if (add_tenth_second == 0)
+					{
+						main_clock = UpdateTime (main_clock);
+						shot_clock = UpdateTime (shot_clock);
+					}
+					add_tenth_second++;
+					if (add_tenth_second > 2)
+						add_tenth_second = 0;
+				}
+				//----------------------------------------------------------------
+			case CLOCK_STOPPED:
+				// ### Clock stopped
+				//----------------------------------------------------------------
+				// Start/stop clock
+				if (IsKeyPressed (KEY_START_STOP_CLOCK))
+				{
+					if (scoreboard_mode == CLOCK_STOPPED)
+						scoreboard_mode = CLOCK_RUNNING;
+					else
+						scoreboard_mode = CLOCK_STOPPED;
+				}
+				
+				// Reset shot clock
+				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
+					shot_clock = time_35;
+				//----------------------------------------------------------------
 
-		// ## Changing mode
-		//----------------------------------------------------------------
-		// Home or visitor
-		if (IsKeyPressed (KEY_CHANGING_HOME))
-			team = HOME;
-		if (IsKeyPressed (KEY_CHANGING_VISITOR))
-			team = VISITOR;
-		// Score, fouls, TOL, period
-		if (IsKeyPressed (KEY_CHANGE_MODE_SCORE))
-			change_type = SCORE;
-		if (IsKeyPressed (KEY_CHANGE_MODE_FOULS))
-			change_type = FOULS;
-		if (IsKeyPressed (KEY_CHANGE_MODE_TOL))
-			change_type = TOL;
-		if (IsKeyPressed (KEY_CHANGE_MODE_PERIOD))
-			change_type = PERIOD;
-		//----------------------------------------------------------------
+				// ### Changing mode
+				//----------------------------------------------------------------
+				// Home or visitor
+				if (IsKeyPressed (KEY_CHANGING_HOME))
+					team = HOME;
+				if (IsKeyPressed (KEY_CHANGING_VISITOR))
+					team = VISITOR;
+				// Score, fouls, TOL, period
+				if (IsKeyPressed (KEY_CHANGE_MODE_SCORE))
+					change_type = SCORE;
+				if (IsKeyPressed (KEY_CHANGE_MODE_FOULS))
+					change_type = FOULS;
+				if (IsKeyPressed (KEY_CHANGE_MODE_TOL))
+					change_type = TOL;
+				if (IsKeyPressed (KEY_CHANGE_MODE_PERIOD))
+					change_type = PERIOD;
+				//----------------------------------------------------------------
 
-		// ## Change score, fouls, TOL
-		//----------------------------------------------------------------
-		switch (change_type)
-		{
-			case SCORE:
-				if ((IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1)) && score[team] + 1 < 200)
-					score[team] += 1;
-				if ((IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2)) && score[team] + 2 < 200)
-					score[team] += 2;
-				if ((IsKeyPressed (KEY_THREE) || IsKeyPressed (KEY_KP_3)) && score[team] + 3 < 200)
-					score[team] += 3;
-				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && score[team] + 1 < 200)
-					score[team]++;
-				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && score[team] > 0)
-					score[team]--;
-				break;
-			case FOULS:
-				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && fouls[team] < 19)
-					fouls[team]++;
-				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && fouls[team] > 0)
-					fouls[team]--;
-				break;
-			case TOL:
-				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && tol[team] < 9)
-					tol[team]++;
-				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && tol[team] > 0)
-					tol[team]--;
-				break;
-			case PERIOD:
-				if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && period < 9)
-					period++;
-				if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && period > -1)
-					period--;
-				break;
-		}
-		//----------------------------------------------------------------
+				// ### Change score, fouls, TOL
+				//----------------------------------------------------------------
+				switch (change_type)
+				{
+					case SCORE:
+						if ((IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1)) && score[team] + 1 < 200)
+							score[team] += 1;
+						if ((IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2)) && score[team] + 2 < 200)
+							score[team] += 2;
+						if ((IsKeyPressed (KEY_THREE) || IsKeyPressed (KEY_KP_3)) && score[team] + 3 < 200)
+							score[team] += 3;
+						if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && score[team] + 1 < 200)
+							score[team]++;
+						if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && score[team] > 0)
+							score[team]--;
+						break;
+					case FOULS:
+						if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && fouls[team] < 19)
+							fouls[team]++;
+						if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && fouls[team] > 0)
+							fouls[team]--;
+						break;
+					case TOL:
+						if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && tol[team] < 9)
+							tol[team]++;
+						if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && tol[team] > 0)
+							tol[team]--;
+						break;
+					case PERIOD:
+						if ((IsKeyPressed (KEY_EQUAL) || IsKeyPressed (KEY_KP_ADD)) && period < 9)
+							period++;
+						if ((IsKeyPressed (KEY_MINUS) || IsKeyPressed (KEY_KP_SUBTRACT)) && period > -1)
+							period--;
+						break;
+				}
+				//----------------------------------------------------------------
 
-		// ## Game buzzer sound
-		//----------------------------------------------------------------
-		if (IsKeyDown (KEY_SOUND_BUZZER))
-		{
-			if (!IsSoundPlaying (buzzer_sound))
-				PlaySound (buzzer_sound);
+				// ### Game buzzer sound
+				//----------------------------------------------------------------
+				if (IsKeyDown (KEY_SOUND_BUZZER))
+				{
+					if (!IsSoundPlaying (buzzer_sound))
+						PlaySound (buzzer_sound);
+				}
+				else if (scoreboard_mode == CLOCK_RUNNING && (TimeToInt (main_clock) == 0 || TimeToInt (shot_clock) == 0))
+				{
+					if (!IsSoundPlaying (buzzer_sound))
+						PlaySound (buzzer_sound);
+				}
+				else
+					StopSound (buzzer_sound);
+				//----------------------------------------------------------------
+				break;
+			case EDIT_MODE:
+				break;
 		}
-		else if (!clock_stopped && (TimeToInt (main_clock) == 0 || TimeToInt (shot_clock) == 0))
-		{
-			if (!IsSoundPlaying (buzzer_sound))
-				PlaySound (buzzer_sound);
-		}
-		else
-			StopSound (buzzer_sound);
-		//----------------------------------------------------------------
+		//-----------------------------------------------------------------------------------------
 
 
 		// ## Drawing
