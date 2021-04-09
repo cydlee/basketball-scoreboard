@@ -1,0 +1,81 @@
+===== Basketball Scoreboard =====
+
+Copyright (c) 2021 Cyrus Lee
+A basketball scoreboard designed for high school basketball.
+
+This basketball scoreboard program is free software. You are welcome to
+redistribute it under certain conditions. See 'LICENSE.md' for details.
+
+
+===== Build =====
+
+GNU/Linux
+  1. Install raylib.
+     <https://github.com/raysan5/raylib/wiki/Working-on-GNU-Linux>
+  2. Run the build script 'build.sh'.
+  3. The default output name is 'scoreboard' (run './scoreboard'). It can be
+     renamed by editing the build script.
+[ no Windows or macOS guide yet - sorry :( ]
+
+
+===== How to Use =====
+
+The scoreboard has four different modes: 
+    CLOCK_STOPPED ------- no clocks are running
+    CLOCK_RUNNING ------- main clock and shot clock counting down
+    SHOT_CLOCK_RUNNING -- only shot clock counting down
+    EDIT_MODE ----------- no clocks running, allows editing time on clocks
+
+    The clock modes have very similar controls, while edit mode has a different
+set of controls.
+    During the clock modes, the scoreboard data is unlocked and can be changed.
+In addition, the main clock and shot clock can count down or be stopped, and
+the shot clock has the additional functionality of being reset. The shot clock
+can be reset to 35 seconds while running or stopped, and set to 30 or 60
+seconds while stopped. Pressing [SPACE] starts and stops the clock, and pressing
+[LEFT CONTROL] starts and stops the shot clock only (for timeouts). To change
+scoreboard data, you must select the team's data you wish to change, as well as
+the type of data to change. [H] and [V] select home and visitor, respectively.
+[S] selects score, [F] selects fouls, [T] selects timeouts left, and [P] selects
+the period (which is not affected by [H] or [V]). To actually change the data,
+press [-] and [+]. For score specifically, you can also use [1], [2], and [3].
+Also, pressing [G] will sound the game buzzer.
+    Edit mode is designed to allow you to correct the time on the main clock or
+shot clock, or to set the time of the main clock at the beginning of a quarter
+or halftime (or anything else). During edit mode, one of the digits on the main
+clock or shot clock will be selected, which can be overwritten using one of the
+number keys. Pressing [ENTER] will save changes and return to CLOCK_STOPPED
+mode, while pressing [BACKSPACE] will discard changes and return. While in edit
+mode, the controls for editing the scoreboard data will not work.
+
+
+===== Controls Reference =====
+
+* Clock modes *
+[SPACE] ----- start/stop clock, will run main clock AND shot clock
+[L-CTRL] ---- start/stop shot clock only (for timeouts)
+[L-SHIFT] --- reset shot clock to 35 seconds
+[R-SHIFT] --- reset shot clock to 30 or 60 seconds (only when clock is stopped)
+[G] --------- sound game buzzer
+[H] --------- select home team
+[V] --------- select visitor team
+[S] --------- select score
+[F] --------- select fouls
+[T] --------- select timeouts left
+[P] --------- select period
+[-][_] ------ decrement selected scoreboard data
+[=][+] ------ increment selected scoreboard data
+[1] --------- add 1 to score (score only)
+[2] --------- add 2 to score (score only)
+[3] --------- add 3 to score (score only)
+[/][\] ------ enter edit mode (only when clock is stopped)
+
+* Edit mode *
+[1-9] ------- number keys, to overwrite selected digit
+[L-ARROW] --- select digit to the left
+[R-ARROW] --- select digit to the right
+[U-ARROW] --- set selected digit to the first one of the main clock
+[D-ARROW] --- set selected digit to the first one of the shot clock
+[L-SHIFT] --- switch between normal view and tenths of seconds on main/shot clock
+[BACKSPACE] - discard changes and exit edit mode
+[ENTER] ----- save changes and exit edit mode

@@ -277,7 +277,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// Reset shot clock
 				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
 					shot_clock = time_35;
-				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK))
+				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK) && scoreboard_mode == CLOCK_STOPPED)
 				{
 					if (TimeToInt (shot_clock) == 300)
 						shot_clock = time_60;
