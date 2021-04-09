@@ -53,16 +53,18 @@ TABLE OF CONTENTS:
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
 // Input keys
-#define KEY_TOGGLE_FULLSCREEN   KEY_F11
-#define KEY_START_STOP_CLOCK    KEY_SPACE
-#define KEY_RESET_SHOT_CLOCK    KEY_LEFT_SHIFT
-#define KEY_SOUND_BUZZER        KEY_G
-#define KEY_CHANGING_HOME       KEY_H
-#define KEY_CHANGING_VISITOR    KEY_V
-#define KEY_CHANGE_MODE_PERIOD  KEY_P
-#define KEY_CHANGE_MODE_SCORE   KEY_S
-#define KEY_CHANGE_MODE_FOULS   KEY_F
-#define KEY_CHANGE_MODE_TOL     KEY_T
+#define KEY_TOGGLE_FULLSCREEN      KEY_F11
+#define KEY_START_STOP_CLOCK       KEY_SPACE
+#define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_CONTROL
+#define KEY_RESET_SHOT_CLOCK       KEY_LEFT_SHIFT
+#define KEY_TIMEOUT_SHOT_CLOCK     KEY_RIGHT_SHIFT
+#define KEY_SOUND_BUZZER           KEY_G
+#define KEY_CHANGING_HOME          KEY_H
+#define KEY_CHANGING_VISITOR       KEY_V
+#define KEY_CHANGE_MODE_PERIOD     KEY_P
+#define KEY_CHANGE_MODE_SCORE      KEY_S
+#define KEY_CHANGE_MODE_FOULS      KEY_F
+#define KEY_CHANGE_MODE_TOL        KEY_T
 // Increment, decrement, score +1/2/3 keybinds are under [Change score, fouls, TOL]
 // Edit mode keybinds are under [Edit mode]
 
@@ -76,7 +78,7 @@ typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seco
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
 typedef enum ChangeType { SCORE = 0, FOULS, TOL, PERIOD } ChangeType;
 typedef enum TimerMode { NORMAL = 0, TENTH_SECONDS } TimerMode;
-typedef enum Mode { CLOCK_STOPPED = 0, CLOCK_RUNNING, EDIT_MODE } Mode;
+typedef enum Mode { CLOCK_STOPPED = 0, CLOCK_RUNNING, SHOT_CLOCK_RUNNING, EDIT_MODE } Mode;
 
 int TimeToInt (Time time); // Returns time in tenths of seconds (int)
 Time UpdateTime (Time time); // Increments time by one tenth second
@@ -169,6 +171,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 	// Control variables
 	int add_tenth_second = 1;
+	int shot_clock_add_tenth_second = 1;
 	int team = HOME;
 	ChangeType change_type = SCORE;
 	TimerMode main_clock_mode = NORMAL;
@@ -195,7 +198,9 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	int replace_digit = -1;
 
 	// Other variables
+	Time time_30 = {0, 0, 3, 0, 0};
 	Time time_35 = {0, 0, 3, 5, 0};
+	Time time_60 = {0, 0, 6, 0, 0};
 
 	// Audio
 	InitAudioDevice ();
@@ -243,10 +248,42 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					else
 						scoreboard_mode = CLOCK_STOPPED;
 				}
+
+			case SHOT_CLOCK_RUNNING:
+				// Update shot clock
+				if (scoreboard_mode == SHOT_CLOCK_RUNNING)
+				{
+					if (TimeToInt (shot_clock) != 0)
+					{
+						if (shot_clock_add_tenth_second == 0)
+							shot_clock = UpdateTime (shot_clock);
+						shot_clock_add_tenth_second++;
+						if (shot_clock_add_tenth_second > 2)
+							shot_clock_add_tenth_second = 0;
+					}
+				}
+				// Shot clock timeout mode
+				if (IsKeyPressed (KEY_START_STOP_SHOT_CLOCK))
+				{
+					if (scoreboard_mode == CLOCK_STOPPED)
+					{
+						shot_clock_add_tenth_second = 1;
+						scoreboard_mode = SHOT_CLOCK_RUNNING;
+					}
+					else if (scoreboard_mode == SHOT_CLOCK_RUNNING)
+						scoreboard_mode = CLOCK_STOPPED;
+				}
 				
 				// Reset shot clock
 				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
 					shot_clock = time_35;
+				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK))
+				{
+					if (TimeToInt (shot_clock) == 300)
+						shot_clock = time_60;
+					else
+						shot_clock = time_30;
+				}
 				// Check if either clock should be set to tenth_seconds mode
 				if (TimeToInt (main_clock) < 600)
 					main_clock_mode = TENTH_SECONDS;
