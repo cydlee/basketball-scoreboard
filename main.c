@@ -176,7 +176,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	Mode scoreboard_mode = CLOCK_STOPPED;
 
 	// Game data
-	Time main_clock = {0, 1, 0, 0, 0};
+	Time main_clock = {0, 8, 0, 0, 0};
 	Time shot_clock = {0, 0, 3, 5, 0};
 	int score[] = {0, 0};
 	int fouls[] = {0, 0};
@@ -525,7 +525,10 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			main_clock_box.x = (screen_width / 2) - (main_clock_box.width / 2);
 			main_clock_box.y = border;
 			// Draw boxes
-			DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
+			if (scoreboard_mode == CLOCK_RUNNING)
+				DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
+			else
+				DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), RED);
 			DrawRectangle (main_clock_box.x, main_clock_box.y, main_clock_box.width, main_clock_box.height, BLACK);
 			// Edit mode
 			if (scoreboard_mode == EDIT_MODE)
