@@ -362,6 +362,11 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					if (!IsSoundPlaying (buzzer_sound))
 						PlaySound (buzzer_sound);
 				}
+				else if (scoreboard_mode == SHOT_CLOCK_RUNNING && TimeToInt (shot_clock) == 0)
+				{
+					if (!IsSoundPlaying (buzzer_sound))
+						PlaySound (buzzer_sound);
+				}
 				else
 					StopSound (buzzer_sound);
 				//----------------------------------------------------------------
