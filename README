@@ -40,6 +40,12 @@ the type of data to change. [H] and [V] select home and visitor, respectively.
 the period (which is not affected by [H] or [V]). To actually change the data,
 press [-] and [+]. For score specifically, you can also use [1], [2], and [3].
 Also, pressing [G] will sound the game buzzer.
+    During CLOCK_STOPPED and CLOCK_RUNNING mode (but not SHOT_CLOCK_RUNNING),
+you can disable or enable the shot clock by pressing [L-ALT]. The shot clock
+will not run or be displayed when the clock is run normally [SPACE], but running
+the shot clock independently [L-CONTROL] is disabled. Entering edit mode will
+re-enable the shot clock if disabled. The shot clock can be disabled while the
+main clock is running normally, so be careful not to disable it by accident.
     Edit mode is designed to allow you to correct the time on the main clock or
 shot clock, or to set the time of the main clock at the beginning of a quarter
 or halftime (or anything else). During edit mode, one of the digits on the main
@@ -56,6 +62,7 @@ mode, the controls for editing the scoreboard data will not work.
 [L-CTRL] ---- start/stop shot clock only (for timeouts)
 [L-SHIFT] --- reset shot clock to 35 seconds
 [R-SHIFT] --- reset shot clock to 30 or 60 seconds (only when clock is stopped)
+[L-ALT] ----- disable or enable shot clock (not during SHOT_CLOCK_RUNNING)
 [G] --------- sound game buzzer
 [H] --------- select home team
 [V] --------- select visitor team

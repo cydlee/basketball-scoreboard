@@ -1,6 +1,6 @@
 /**************************************************************************************************
 
-Basketball Scoreboard version 1
+Basketball Scoreboard version 2
 Copyright (c) 2021 Cyrus Lee
 
 This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ TABLE OF CONTENTS:
 #include "raylib.h"
 
 #define NAME "Basketball Scoreboard"
-#define VERSION "version 1"
+#define VERSION "version 2"
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
 // Input keys
@@ -58,6 +58,7 @@ TABLE OF CONTENTS:
 #define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_CONTROL
 #define KEY_RESET_SHOT_CLOCK       KEY_LEFT_SHIFT
 #define KEY_TIMEOUT_SHOT_CLOCK     KEY_RIGHT_SHIFT
+#define KEY_DISABLE_SHOT_CLOCK     KEY_LEFT_ALT
 #define KEY_SOUND_BUZZER           KEY_G
 #define KEY_CHANGING_HOME          KEY_H
 #define KEY_CHANGING_VISITOR       KEY_V
@@ -177,6 +178,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	TimerMode main_clock_mode = NORMAL;
 	TimerMode shot_clock_mode = NORMAL;
 	Mode scoreboard_mode = CLOCK_STOPPED;
+	int shot_clock_enabled = 1;
 
 	// Game data
 	Time main_clock = {0, 8, 0, 0, 0};
@@ -225,12 +227,13 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// ### Clock running
 				//----------------------------------------------------------------
 				// Update clock
-				if (TimeToInt (shot_clock) != 0 && TimeToInt (main_clock) != 0)
+				if (TimeToInt (main_clock) != 0 && TimeToInt (shot_clock) != 0)
 				{
 					if (add_tenth_second == 0)
 					{
 						main_clock = UpdateTime (main_clock);
-						shot_clock = UpdateTime (shot_clock);
+						if (shot_clock_enabled)
+							shot_clock = UpdateTime (shot_clock);
 					}
 					add_tenth_second++;
 					if (add_tenth_second > 2)
@@ -249,6 +252,15 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 						scoreboard_mode = CLOCK_STOPPED;
 				}
 
+				// Disable or enable the shot clock
+				if (IsKeyPressed (KEY_DISABLE_SHOT_CLOCK))
+				{
+					if (shot_clock_enabled)
+						shot_clock_enabled = 0;
+					else
+						shot_clock_enabled = 1;
+				}
+
 			case SHOT_CLOCK_RUNNING:
 				// Update shot clock
 				if (scoreboard_mode == SHOT_CLOCK_RUNNING)
@@ -265,7 +277,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// Shot clock timeout mode
 				if (IsKeyPressed (KEY_START_STOP_SHOT_CLOCK))
 				{
-					if (scoreboard_mode == CLOCK_STOPPED)
+					if (scoreboard_mode == CLOCK_STOPPED && shot_clock_enabled)
 					{
 						shot_clock_add_tenth_second = 1;
 						scoreboard_mode = SHOT_CLOCK_RUNNING;
@@ -380,6 +392,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					score_buffer[VISITOR] = score[VISITOR];
 					selected_digit = 1; // 1-4 = digits 1-4 of the main clock, 5-6 = digits 1-2 of the shot clock
 					replace_digit = -1;
+					shot_clock_enabled = 1;
 					scoreboard_mode = EDIT_MODE;
 				}
 
@@ -644,7 +657,14 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				}
 			}
 			// Draw digits
-			if (shot_clock_mode == TENTH_SECONDS)
+			if (!shot_clock_enabled)
+			{
+				// Less than ten seconds
+				DrawDigit (-1, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawDigit (-1, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
+			}
+			else if (shot_clock_mode == TENTH_SECONDS)
 			{
 				// Less than ten seconds
 				DrawDigit (shot_clock_display.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
