@@ -63,13 +63,13 @@ mode, the controls for editing the scoreboard data will not work.
 [L-SHIFT] --- reset shot clock to 35 seconds
 [R-SHIFT] --- reset shot clock to 30 or 60 seconds (only when clock is stopped)
 [L-ALT] ----- disable or enable shot clock (not during SHOT_CLOCK_RUNNING)
-[G] --------- sound game buzzer
-[H] --------- select home team
-[V] --------- select visitor team
-[S] --------- select score
-[F] --------- select fouls
-[T] --------- select timeouts left
-[P] --------- select period
+[G] --------- sound (g)ame buzzer
+[H] --------- select (h)ome team
+[V] --------- select (v)isitor team
+[S] --------- select (s)core
+[F] --------- select (f)ouls
+[T] --------- select (t)imeouts left
+[P] --------- select (p)eriod
 [-][_] ------ decrement selected scoreboard data
 [=][+] ------ increment selected scoreboard data
 [1] --------- add 1 to score (score only)
