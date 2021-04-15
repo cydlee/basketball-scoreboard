@@ -448,8 +448,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 							break;
 					}
 				}
-				// Change numbers - I cannot find a way to avoid this ugly if-else blob, please make a
-				//                  pull request or issue or something if you find something
+				// Change numbers
 				if (IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1))
 					replace_digit = 1;
 				else if (IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2))
@@ -473,8 +472,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				else
 					replace_digit = -1;
 				// Move the selected number into the appropriate place in the edit mode buffers
-				// This if-switch-if-else-switch thing is really ugly too (╯°□°)╯︵ ┻━┻
-				// Really, this code is disgusting and it hurts to write it but I can't think of a better solution
+				// This if-switch-if-else-switch thing is really ugly (╯°□°)╯︵ ┻━┻
 				if (replace_digit != -1)
 				{
 					switch (selected_digit)
