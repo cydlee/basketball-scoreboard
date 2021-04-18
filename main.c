@@ -1,6 +1,6 @@
 /**************************************************************************************************
 
-Basketball Scoreboard version 2
+Basketball Scoreboard version 3
 Copyright (c) 2021 Cyrus Lee
 
 This program is free software: you can redistribute it and/or modify
@@ -16,11 +16,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>
+Made with raylib, by raysan5 <https://github.com/raysan5/raylib>
 
 ===================================================================================================
 
-TABLE OF CONTENTS:
+TABLE OF CONTENTS: --- is broken, need to fix
 # Option parsing
 # Version message
 # Initialize
@@ -49,16 +49,18 @@ TABLE OF CONTENTS:
 #include "raylib.h"
 
 #define NAME "Basketball Scoreboard"
-#define VERSION "version 2"
+#define VERSION "version 3"
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
 // Input keys
 #define KEY_TOGGLE_FULLSCREEN      KEY_F11
-#define KEY_START_STOP_CLOCK       KEY_SPACE
-#define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_CONTROL
+#define KEY_START_STOP_CLOCKS      KEY_SPACE
+#define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_ALT
+#define KEY_START_STOP_MAIN_CLOCK  KEY_RIGHT_ALT
+#define KEY_DISABLE_SHOT_CLOCK     KEY_LEFT_CONTROL
+#define KEY_DISABLE_MAIN_CLOCK     KEY_RIGHT_CONTROL
 #define KEY_RESET_SHOT_CLOCK       KEY_LEFT_SHIFT
 #define KEY_TIMEOUT_SHOT_CLOCK     KEY_RIGHT_SHIFT
-#define KEY_DISABLE_SHOT_CLOCK     KEY_LEFT_ALT
 #define KEY_SOUND_BUZZER           KEY_G
 #define KEY_CHANGING_HOME          KEY_H
 #define KEY_CHANGING_VISITOR       KEY_V
@@ -79,7 +81,7 @@ typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seco
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
 typedef enum ChangeType { SCORE = 0, FOULS, TOL, PERIOD } ChangeType;
 typedef enum TimerMode { NORMAL = 0, TENTH_SECONDS } TimerMode;
-typedef enum Mode { CLOCK_STOPPED = 0, CLOCK_RUNNING, SHOT_CLOCK_RUNNING, EDIT_MODE } Mode;
+typedef enum Mode { CLOCK = 0, EDIT_MODE } Mode;
 
 int TimeToInt (Time time); // Returns time in tenths of seconds (int)
 Time UpdateTime (Time time); // Increments time by one tenth second
@@ -138,7 +140,7 @@ GNU General Public License for more details.\n\
 You should have received a copy of the GNU General Public License\n\
 along with this program. If not, see <https://www.gnu.org/licenses/>.\n\
 \n\
-Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
+Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 ", stdout);
 		return EXIT_SUCCESS;
 	}
@@ -171,14 +173,17 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	DisplayBox visitor_tol_box;
 
 	// Control variables
-	int add_tenth_second = 1;
-	int shot_clock_add_tenth_second = 1;
 	int team = HOME;
 	ChangeType change_type = SCORE;
+	Mode scoreboard_mode = CLOCK;
 	TimerMode main_clock_mode = NORMAL;
 	TimerMode shot_clock_mode = NORMAL;
-	Mode scoreboard_mode = CLOCK_STOPPED;
 	int shot_clock_enabled = 1;
+	int main_clock_enabled = 1;
+	int shot_clock_running = 0;
+	int main_clock_running = 0;
+	int shot_clock_add_tenth_second = 1;
+	int main_clock_add_tenth_second = 1;
 
 	// Game data
 	Time main_clock = {0, 8, 0, 0, 0};
@@ -223,49 +228,34 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 		switch (scoreboard_mode)
 		{
-			case CLOCK_RUNNING:
-				// ### Clock running
-				//----------------------------------------------------------------
-				// Update clock
+			case CLOCK:
+				// Start/stop clocks
+				if (IsKeyPressed (KEY_START_STOP_MAIN_CLOCK))
+					main_clock_running = !main_clock_running;
+				if (IsKeyPressed (KEY_START_STOP_SHOT_CLOCK))
+					shot_clock_running = !shot_clock_running;
+				if (IsKeyPressed (KEY_START_STOP_CLOCKS))
+				{
+					if (!main_clock_running && !shot_clock_running)
+						main_clock_running = 1;
+					else
+						main_clock_running = 0;
+					shot_clock_running = main_clock_running;
+				}
+				// Update clocks
 				if (TimeToInt (main_clock) != 0 && TimeToInt (shot_clock) != 0)
 				{
-					if (add_tenth_second == 0)
+					// Main clock
+					if (main_clock_running)
 					{
-						main_clock = UpdateTime (main_clock);
-						if (shot_clock_enabled)
-							shot_clock = UpdateTime (shot_clock);
+						if (main_clock_add_tenth_second == 0)
+							main_clock = UpdateTime (main_clock);
+						main_clock_add_tenth_second++;
+						if (main_clock_add_tenth_second > 2)
+							main_clock_add_tenth_second = 0;
 					}
-					add_tenth_second++;
-					if (add_tenth_second > 2)
-						add_tenth_second = 0;
-				}
-				//----------------------------------------------------------------
-			case CLOCK_STOPPED:
-				// ### Clock stopped
-				//----------------------------------------------------------------
-				// Start/stop clock
-				if (IsKeyPressed (KEY_START_STOP_CLOCK))
-				{
-					if (scoreboard_mode == CLOCK_STOPPED)
-						scoreboard_mode = CLOCK_RUNNING;
-					else
-						scoreboard_mode = CLOCK_STOPPED;
-				}
-
-				// Disable or enable the shot clock
-				if (IsKeyPressed (KEY_DISABLE_SHOT_CLOCK))
-				{
-					if (shot_clock_enabled)
-						shot_clock_enabled = 0;
-					else
-						shot_clock_enabled = 1;
-				}
-
-			case SHOT_CLOCK_RUNNING:
-				// Update shot clock
-				if (scoreboard_mode == SHOT_CLOCK_RUNNING)
-				{
-					if (TimeToInt (shot_clock) != 0)
+					// Shot clock
+					if (shot_clock_running)
 					{
 						if (shot_clock_add_tenth_second == 0)
 							shot_clock = UpdateTime (shot_clock);
@@ -274,22 +264,11 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 							shot_clock_add_tenth_second = 0;
 					}
 				}
-				// Shot clock timeout mode
-				if (IsKeyPressed (KEY_START_STOP_SHOT_CLOCK))
-				{
-					if (scoreboard_mode == CLOCK_STOPPED && shot_clock_enabled)
-					{
-						shot_clock_add_tenth_second = 1;
-						scoreboard_mode = SHOT_CLOCK_RUNNING;
-					}
-					else if (scoreboard_mode == SHOT_CLOCK_RUNNING)
-						scoreboard_mode = CLOCK_STOPPED;
-				}
-				
+
 				// Reset shot clock
 				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
 					shot_clock = time_35;
-				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK) && scoreboard_mode == CLOCK_STOPPED)
+				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK) && !shot_clock_running)
 				{
 					if (TimeToInt (shot_clock) == 300)
 						shot_clock = time_60;
@@ -369,12 +348,12 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					if (!IsSoundPlaying (buzzer_sound))
 						PlaySound (buzzer_sound);
 				}
-				else if (scoreboard_mode == CLOCK_RUNNING && (TimeToInt (main_clock) == 0 || TimeToInt (shot_clock) == 0))
+				else if (main_clock_running && TimeToInt (main_clock) == 0)
 				{
 					if (!IsSoundPlaying (buzzer_sound))
 						PlaySound (buzzer_sound);
 				}
-				else if (scoreboard_mode == SHOT_CLOCK_RUNNING && TimeToInt (shot_clock) == 0)
+				else if (shot_clock_running && TimeToInt (shot_clock) == 0)
 				{
 					if (!IsSoundPlaying (buzzer_sound))
 						PlaySound (buzzer_sound);
@@ -384,7 +363,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				//----------------------------------------------------------------
 
 				// Update edit mode buffers and enter edit mode
-				if (scoreboard_mode == CLOCK_STOPPED && (IsKeyPressed (KEY_SLASH) || IsKeyPressed (KEY_BACKSLASH)))
+				if (!main_clock_running && !shot_clock_running && (IsKeyPressed (KEY_SLASH) || IsKeyPressed (KEY_BACKSLASH)))
 				{
 					main_clock_buffer = main_clock;
 					shot_clock_buffer = shot_clock;
@@ -405,7 +384,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				//---------------------------------------------------------------------------------
 				// Discard changes and exit edit mode
 				if (IsKeyPressed (KEY_BACKSPACE))
-					scoreboard_mode = CLOCK_STOPPED;
+					scoreboard_mode = CLOCK;
 				// Save changes and exit edit mode
 				if (IsKeyPressed (KEY_ENTER))
 				{
@@ -413,7 +392,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					shot_clock = shot_clock_buffer;
 					score[HOME] = score_buffer[HOME];
 					score[VISITOR] = score_buffer[VISITOR];
-					scoreboard_mode = CLOCK_STOPPED;
+					scoreboard_mode = CLOCK;
 				}
 				// Switch selected digit
 				if (IsKeyPressed (KEY_LEFT) && selected_digit > 1)
@@ -578,7 +557,7 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			main_clock_box.x = (screen_width / 2) - (main_clock_box.width / 2);
 			main_clock_box.y = border;
 			// Draw boxes
-			if (scoreboard_mode == CLOCK_RUNNING)
+			if (main_clock_running)
 				DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), WHITE);
 			else
 				DrawRectangle (main_clock_box.x - border, main_clock_box.y - border, main_clock_box.width + (border * 2), main_clock_box.height + (border * 2), RED);
@@ -639,7 +618,10 @@ Made with Raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			shot_clock_box.x = (screen_width / 2) - (shot_clock_box.width / 2);
 			shot_clock_box.y = screen_height - shot_clock_box.height - (border * 5);
 			// Draw boxes
-			DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), WHITE);
+			if (shot_clock_running)
+				DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), WHITE);
+			else
+				DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), GREEN);
 			DrawRectangle (shot_clock_box.x, shot_clock_box.y, shot_clock_box.width, shot_clock_box.height, BLACK);
 			// Edit mode
 			if (scoreboard_mode == EDIT_MODE)
