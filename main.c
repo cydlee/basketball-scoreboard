@@ -25,13 +25,7 @@ TABLE OF CONTENTS: --- is broken, need to fix
 # Version message
 # Initialize
 # Loop
-	## Update board logic
-		### Clock running
-		### Clock stopped
-		### Changing mode
-		### Change score, fouls, TOL
-		### Game buzzer sound
-		### Edit mode
+/////////////////////////////////////// REDO THIS SECTION /////////////////////////////////////////
 	## Drawing
 		### Main clock
 		### Shot clock
@@ -55,10 +49,10 @@ TABLE OF CONTENTS: --- is broken, need to fix
 // Input keys
 #define KEY_TOGGLE_FULLSCREEN      KEY_F11
 #define KEY_START_STOP_CLOCKS      KEY_SPACE
-#define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_ALT
-#define KEY_START_STOP_MAIN_CLOCK  KEY_RIGHT_ALT
-#define KEY_DISABLE_SHOT_CLOCK     KEY_LEFT_CONTROL
-#define KEY_DISABLE_MAIN_CLOCK     KEY_RIGHT_CONTROL
+#define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_CONTROL
+#define KEY_START_STOP_MAIN_CLOCK  KEY_RIGHT_CONTROL
+#define KEY_DISABLE_SHOT_CLOCK     KEY_LEFT_ALT
+#define KEY_DISABLE_MAIN_CLOCK     KEY_RIGHT_ALT
 #define KEY_RESET_SHOT_CLOCK       KEY_LEFT_SHIFT
 #define KEY_TIMEOUT_SHOT_CLOCK     KEY_RIGHT_SHIFT
 #define KEY_SOUND_BUZZER           KEY_G
