@@ -25,14 +25,14 @@ TABLE OF CONTENTS: --- is broken, need to fix
 # Version message
 # Initialize
 # Loop
-/////////////////////////////////////// REDO THIS SECTION /////////////////////////////////////////
+/////////////////////////////////// TODO: REDO THIS SECTION ///////////////////////////////////////
 	## Drawing
 		### Main clock
 		### Shot clock
 		### Period
 		### Score displays
 		### Foul displays
-		### TOL displays
+		### TOL displays`
 # De-initialization
 
 **************************************************************************************************/
@@ -153,52 +153,48 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	Image window_icon = LoadImage ("icon.png");
 	SetWindowIcon (window_icon);
 
-	// Drawing variables
+	// Drawing variables misc.
 	float screen_width, screen_height, border;
 	int fontSize, period_label_y, hvlabel_y, fouls_label_y;
 
+	// Display boxes for storing width, height, x, y values of each box on the scoreboard
 	DisplayBox main_clock_box, shot_clock_box, period_box;
-
-	DisplayBox home_score_box;
-	DisplayBox visitor_score_box;
-	DisplayBox home_fouls_box;
-	DisplayBox visitor_fouls_box;
-	DisplayBox home_tol_box;
-	DisplayBox visitor_tol_box;
+	DisplayBox home_score_box, home_fouls_box, home_tol_box;
+	DisplayBox visitor_score_box, visitor_fouls_box, visitor_tol_box;
 
 	// Control variables
-	int team = HOME;
-	ChangeType change_type = SCORE;
-	Mode scoreboard_mode = CLOCK;
-	TimerMode main_clock_mode = NORMAL;
-	TimerMode shot_clock_mode = NORMAL;
+	int team = HOME; // Selected team to change data
+	ChangeType change_type = SCORE; // Selected type of data to change
+	Mode scoreboard_mode = CLOCK; // Scoreboard mode: clock or edit mode
+	TimerMode main_clock_mode = NORMAL; // Controls whether time is displayed as normal or tenth seconds
+	TimerMode shot_clock_mode = NORMAL; // TODO: maybe move to drawing vars? (code organization)
 	int shot_clock_enabled = 1;
-	int main_clock_enabled = 1;
-	int shot_clock_running = 0;
+	int main_clock_enabled = 1; // Main/shot clock enabled - whether to display or not (same TODO as above)
+	int shot_clock_running = 0; // Main/shot clock running - whether to update time every frame
 	int main_clock_running = 0;
-	int shot_clock_add_tenth_second = 1;
+	int shot_clock_add_tenth_second = 1; // Every 3 frames (30 FPS) update time by 0.1 seconds
 	int main_clock_add_tenth_second = 1;
 
 	// Game data
-	Time main_clock = {0, 8, 0, 0, 0};
-	Time shot_clock = {0, 0, 3, 5, 0};
+	Time main_clock = {0, 8, 0, 0, 0}; // Stores actual time for main/shot clocks
+	Time shot_clock = {0, 0, 3, 5, 0}; // Not directly displayed
 	int score[] = {0, 0};
-	int fouls[] = {0, 0};
-	int tol[] = {5, 5};
+	int fouls[] = {0, 0}; // Stores actual score, fouls, timeouts left, period
+	int tol[] = {5, 5}; // Directly displayed on the board
 	int period = 0;
 
 	// Display times
-	Time main_clock_display = main_clock;
+	Time main_clock_display = main_clock; // What is actually displayed for clocks is stored here
 	Time shot_clock_display = shot_clock;
 
 	// Edit mode buffers + pointer
-	Time main_clock_buffer = main_clock;
+	Time main_clock_buffer = main_clock; // Buffers for edit mode (user chooses to save or discard)
 	Time shot_clock_buffer = shot_clock;
-	int score_buffer[] = {0, 0};
-	int selected_digit = 1;
-	int replace_digit = -1;
+	int score_buffer[] = {0, 0}; // TODO: what is this used for?
+	int selected_digit = 1; // Selected digit; 1-4 = main; 5-6 = shot
+	int replace_digit = -1; // What digit to replace the selected one with; -1 indicates no replacement
 
-	// Other variables
+	// Constant (TODO: maybe make const?) time variables to reset shot clock
 	Time time_30 = {0, 0, 3, 0, 0};
 	Time time_35 = {0, 0, 3, 5, 0};
 	Time time_60 = {0, 0, 6, 0, 0};
@@ -223,11 +219,12 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 		switch (scoreboard_mode)
 		{
 			case CLOCK:
-				// Start/stop clocks
+				// Start/stop clocks individually
 				if (IsKeyPressed (KEY_START_STOP_MAIN_CLOCK))
 					main_clock_running = !main_clock_running;
 				if (IsKeyPressed (KEY_START_STOP_SHOT_CLOCK))
 					shot_clock_running = !shot_clock_running;
+				// When both clocks are stopped, set both to running; else, set both to stopped
 				if (IsKeyPressed (KEY_START_STOP_CLOCKS))
 				{
 					if (!main_clock_running && !shot_clock_running)
@@ -236,10 +233,10 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 						main_clock_running = 0;
 					shot_clock_running = main_clock_running;
 				}
-				// Update clocks
+				// Update clocks only if neither has no time left
 				if (TimeToInt (main_clock) != 0 && TimeToInt (shot_clock) != 0)
 				{
-					// Main clock
+					// Main clock, only if it is running
 					if (main_clock_running)
 					{
 						if (main_clock_add_tenth_second == 0)
@@ -248,7 +245,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 						if (main_clock_add_tenth_second > 2)
 							main_clock_add_tenth_second = 0;
 					}
-					// Shot clock
+					// Shot clock, only if it is running
 					if (shot_clock_running)
 					{
 						if (shot_clock_add_tenth_second == 0)
@@ -259,9 +256,10 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					}
 				}
 
-				// Reset shot clock
+				// Reset shot clock (35)
 				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
 					shot_clock = time_35;
+				// Reset shot clock to 30 only if it is stopped, and reset to 60 if it is already 30 (and stopped)
 				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK) && !shot_clock_running)
 				{
 					if (TimeToInt (shot_clock) == 300)
@@ -300,6 +298,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 				// ### Change score, fouls, TOL
 				//----------------------------------------------------------------
+				// Check change type: the same buttons will change different values based on this
 				switch (change_type)
 				{
 					case SCORE:
@@ -337,6 +336,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 				// ### Game buzzer sound
 				//----------------------------------------------------------------
+				// Play when key is pressed, if not then play when one of the clocks has run out and is still "running", else stop sound
 				if (IsKeyDown (KEY_SOUND_BUZZER))
 				{
 					if (!IsSoundPlaying (buzzer_sound))
@@ -356,7 +356,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					StopSound (buzzer_sound);
 				//----------------------------------------------------------------
 
-				// Update edit mode buffers and enter edit mode
+				// Update edit mode buffers, reset edit mode variables, and enter edit mode
 				if (!main_clock_running && !shot_clock_running && (IsKeyPressed (KEY_SLASH) || IsKeyPressed (KEY_BACKSLASH)))
 				{
 					main_clock_buffer = main_clock;
@@ -369,7 +369,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					scoreboard_mode = EDIT_MODE;
 				}
 
-				// Set clock displays to actual time
+				// Set clock displays to actual time every frame
 				main_clock_display = main_clock;
 				shot_clock_display = shot_clock;
 				break;
@@ -379,7 +379,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// Discard changes and exit edit mode
 				if (IsKeyPressed (KEY_BACKSPACE))
 					scoreboard_mode = CLOCK;
-				// Save changes and exit edit mode
+				// Save changes by overwriting core variables with the buffers, and exit edit mode
 				if (IsKeyPressed (KEY_ENTER))
 				{
 					main_clock = main_clock_buffer;
@@ -388,12 +388,12 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					score[VISITOR] = score_buffer[VISITOR];
 					scoreboard_mode = CLOCK;
 				}
-				// Switch selected digit
+				// Switch selected digit left and right
 				if (IsKeyPressed (KEY_LEFT) && selected_digit > 1)
 					selected_digit--;
 				if (IsKeyPressed (KEY_RIGHT) && selected_digit < 6)
 					selected_digit++;
-				// Conveniences to jump to shot or main clock quickly (first digit)
+				// Convenient keys to jump to shot or main clock quickly (first digit)
 				if (IsKeyPressed (KEY_UP))
 					selected_digit = 1;
 				if (IsKeyPressed (KEY_DOWN))
@@ -401,6 +401,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// Flip mode between normal and tenth seconds
 				if (IsKeyPressed (KEY_LEFT_SHIFT))
 				{
+					// Digits 1-4 are main clock and digits 5-6 are shot clock
 					switch (selected_digit)
 					{
 						case 1:
@@ -421,7 +422,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 							break;
 					}
 				}
-				// Change numbers
+				// Change numbers - TODO: probably make this an array
 				if (IsKeyPressed (KEY_ONE) || IsKeyPressed (KEY_KP_1))
 					replace_digit = 1;
 				else if (IsKeyPressed (KEY_TWO) || IsKeyPressed (KEY_KP_2))
@@ -446,6 +447,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					replace_digit = -1;
 				// Move the selected number into the appropriate place in the edit mode buffers
 				// This if-switch-if-else-switch thing is really ugly (╯°□°)╯︵ ┻━┻
+				// TODO: make it look nicer maybe?
 				if (replace_digit != -1)
 				{
 					switch (selected_digit)
@@ -520,7 +522,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 							break;
 					}
 				}
-				// Set display time to edit mode buffer
+				// Set display time to edit mode buffer instead of actual value
 				main_clock_display = main_clock_buffer;
 				shot_clock_display = shot_clock_buffer;
 				//---------------------------------------------------------------------------------
