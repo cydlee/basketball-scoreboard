@@ -7,6 +7,20 @@ This basketball scoreboard program is free software. You are welcome to
 redistribute it under certain conditions. See 'LICENSE.md' for details.
 
 
+===== Contribute =====
+
+At this point in time I don't have much experience with code collaboration, and
+I don't really expect any contributions. But, if you do want to contribute,
+it's probably best to leave an issue with example code instead of making a pull
+request.
+
+The 'main' branch contains a stable version of the program that is suitable for
+use in games.
+
+New features will be developed in a separate branch. The name of this branch
+may vary, but it should be called 'experimental' or 'development'.
+
+
 ===== Build =====
 
 GNU/Linux
