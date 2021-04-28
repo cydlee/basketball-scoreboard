@@ -12,4 +12,5 @@ Apr 15-19 2021 version 3:
 
 TODO:
 - add feature to disable shot clock (and main clock maybe)
+- create a release and possibly port to Windows/macOS
 - check for and remove inconsistencies in code style
