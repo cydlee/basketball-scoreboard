@@ -7,3 +7,8 @@ Apr 11 2021 version 2:
 Apr 15-19 2021 version 3:
 - backend for managing whether clocks are running was changed
 - tweaks to controls
+- improved comments
+- redo README
+
+TODO:
+- add feature to disable shot clock (and main clock maybe)

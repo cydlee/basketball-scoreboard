@@ -20,51 +20,52 @@ GNU/Linux
 
 ===== How to Use =====
 
--- BROKEN: NEED TO REWRITE --
+The scoreboard has two modes:
+  CLOCK_MODE - normal use
+  EDIT_MODE -- special mode for correcting time or resetting the main clock
 
-The scoreboard has four different modes: 
-    CLOCK_STOPPED ------- no clocks are running
-    CLOCK_RUNNING ------- main clock and shot clock counting down
-    SHOT_CLOCK_RUNNING -- only shot clock counting down
-    EDIT_MODE ----------- no clocks running, allows editing time on clocks
+Each mode has separate controls described in the Controls Reference.
 
-    The clock modes have very similar controls, while edit mode has a different
-set of controls.
-    During the clock modes, the scoreboard data is unlocked and can be changed.
-In addition, the main clock and shot clock can count down or be stopped, and
-the shot clock has the additional functionality of being reset. The shot clock
-can be reset to 35 seconds while running or stopped, and set to 30 or 60
-seconds while stopped. Pressing [SPACE] starts and stops the clock, and pressing
-[LEFT CONTROL] starts and stops the shot clock only (for timeouts). To change
-scoreboard data, you must select the team's data you wish to change, as well as
-the type of data to change. [H] and [V] select home and visitor, respectively.
-[S] selects score, [F] selects fouls, [T] selects timeouts left, and [P] selects
-the period (which is not affected by [H] or [V]). To actually change the data,
-press [-] and [+]. For score specifically, you can also use [1], [2], and [3].
-Also, pressing [G] will sound the game buzzer.
-    During CLOCK_STOPPED and CLOCK_RUNNING mode (but not SHOT_CLOCK_RUNNING),
-you can disable or enable the shot clock by pressing [L-ALT]. The shot clock
-will not run or be displayed when the clock is run normally [SPACE], but running
-the shot clock independently [L-CONTROL] is disabled. Entering edit mode will
-re-enable the shot clock if disabled. The shot clock can be disabled while the
-main clock is running normally, so be careful not to disable it by accident.
-    Edit mode is designed to allow you to correct the time on the main clock or
-shot clock, or to set the time of the main clock at the beginning of a quarter
-or halftime (or anything else). During edit mode, one of the digits on the main
-clock or shot clock will be selected, which can be overwritten using one of the
-number keys. Pressing [ENTER] will save changes and return to CLOCK_STOPPED
-mode, while pressing [BACKSPACE] will discard changes and return. While in edit
-mode, the controls for editing the scoreboard data will not work.
+Changing Data:
+  The scoreboard always has a selected team and data type. When you press plus
+or minus, the selected data type will be incremented or decremented depending
+on the selected field. For score specifically, you can press 1-2-3 to add to
+the score. Pressing [H]ome and [V]isitor change the selected team, and pressing
+[S]core, [F]ouls, [T]imeouts left, and [P]eriod change the selected type. The
+combination of these two are the selected field. For example, [H]-[S] selects
+the home team's score box. Then, pressing [2] will add two points to it. Period
+can be changed regardless of what team is selected, so [V]-[P] and [H]-[P] are
+equivalent. However, the selected team will still be changed by [H] and [V].
+
+Clocks:
+  If one of the clocks has no time left, neither clock will actually run, even
+if the clock is set to running. While a clock is running and its time is equal
+to zero, the game buzzer will sound. [SPACE] starts both clocks when they are
+both stopped, and stops all clocks in any other case. [L-CTRL] starts and stops
+the shot clock independently, and [R-CTRL] starts and stops the main clock.
+[L-SHIFT] resets the shot clock to 35 seconds for normal gameplay, and
+[R-SHIFT] resets it to 30 or 60 seconds for timeouts.
+
+Edit Mode:
+  When there is a timing error or the main clock needs to be set, you can use
+edit mode. To enter edit mode, press [/] or [\]. Edit mode can only be entered
+while both clocks are stopped. During edit mode, some controls do different
+things. For example, [L-SHIFT] changes whether tenth-seconds are shown on the
+clock. Use the arrow keys to change which digit is selected, the number keys to
+change the selected digit, and [ENTER] to save changes and quit edit mode. If
+you made a mistake and want to discard your changes, press [BACKSPACE].
+
+Refer to the Controls Reference for any controls not explained in this section.
 
 
 ===== Controls Reference =====
 
-* Clock modes *
-[SPACE] ----- start/stop clock, will run main clock AND shot clock
-[L-CTRL] ---- start/stop shot clock only (for timeouts)
+* Clock mode *
+[SPACE] ----- start/stop both clocks, if one is running, both will be stopped
+[L-CTRL] ---- start/stop shot clock only
+[R-CTRL] ---- start/stop main clock only
 [L-SHIFT] --- reset shot clock to 35 seconds
-[R-SHIFT] --- reset shot clock to 30 or 60 seconds (only when clock is stopped)
-[L-ALT] ----- disable or enable shot clock (not during SHOT_CLOCK_RUNNING)
+[R-SHIFT] --- reset shot clock to 30 or 60 seconds (only when stopped)
 [G] --------- sound (g)ame buzzer
 [H] --------- select (h)ome team
 [V] --------- select (v)isitor team
@@ -80,7 +81,7 @@ mode, the controls for editing the scoreboard data will not work.
 [/][\] ------ enter edit mode (only when clock is stopped)
 
 * Edit mode *
-[1-9] ------- number keys, to overwrite selected digit
+[0-9] ------- number keys, to overwrite selected digit
 [L-ARROW] --- select digit to the left
 [R-ARROW] --- select digit to the right
 [U-ARROW] --- set selected digit to the first one of the main clock

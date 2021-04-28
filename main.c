@@ -18,22 +18,27 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 Made with raylib, by raysan5 <https://github.com/raysan5/raylib>
 
-===================================================================================================
+***************************************************************************************************
 
-TABLE OF CONTENTS: --- is broken, need to fix
-# Option parsing
-# Version message
-# Initialize
-# Loop
-/////////////////////////////////// TODO: REDO THIS SECTION ///////////////////////////////////////
-	## Drawing
-		### Main clock
-		### Shot clock
-		### Period
-		### Score displays
-		### Foul displays
-		### TOL displays`
-# De-initialization
+|------------------------------|
+| main () - Table of Contents: |
+|------------------------------|
+| # Option parsing             |
+| # Version message            |
+| # Initialization             |
+| # Loop                       |
+|     ## Update board logic    |
+|         ### Clock mode       |
+|         ### Edit mode        |
+|     ## Drawing               |
+|         ### Main clock       |
+|         ### Shot clock       |
+|         ### Period           |
+|         ### Score displays   |
+|         ### Foul displays    |
+|         ### TOL displays     |
+| # De-initialization          |
+|------------------------------|
 
 **************************************************************************************************/
 
@@ -141,7 +146,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	//---------------------------------------------------------------------------------------------
 
 
-	// # Initialize
+	// # Initialization
 	//---------------------------------------------------------------------------------------------
 
 	// Window
@@ -167,9 +172,9 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	ChangeType change_type = SCORE; // Selected type of data to change
 	Mode scoreboard_mode = CLOCK; // Scoreboard mode: clock or edit mode
 	TimerMode main_clock_mode = NORMAL; // Controls whether time is displayed as normal or tenth seconds
-	TimerMode shot_clock_mode = NORMAL; // TODO: maybe move to drawing vars? (code organization)
+	TimerMode shot_clock_mode = NORMAL;
 	int shot_clock_enabled = 1;
-	int main_clock_enabled = 1; // Main/shot clock enabled - whether to display or not (same TODO as above)
+	int main_clock_enabled = 1; // Main/shot clock enabled - whether to display or not
 	int shot_clock_running = 0; // Main/shot clock running - whether to update time every frame
 	int main_clock_running = 0;
 	int shot_clock_add_tenth_second = 1; // Every 3 frames (30 FPS) update time by 0.1 seconds
@@ -178,6 +183,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	// Game data
 	Time main_clock = {0, 8, 0, 0, 0}; // Stores actual time for main/shot clocks
 	Time shot_clock = {0, 0, 3, 5, 0}; // Not directly displayed
+	Time timeout_clock = {0, 0, 3, 0, 0}; // For timeouts (unused)
 	int score[] = {0, 0};
 	int fouls[] = {0, 0}; // Stores actual score, fouls, timeouts left, period
 	int tol[] = {5, 5}; // Directly displayed on the board
@@ -190,14 +196,14 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	// Edit mode buffers + pointer
 	Time main_clock_buffer = main_clock; // Buffers for edit mode (user chooses to save or discard)
 	Time shot_clock_buffer = shot_clock;
-	int score_buffer[] = {0, 0}; // TODO: what is this used for?
+	int score_buffer[] = {0, 0}; // TODO: Currently unused, may be used in the future
 	int selected_digit = 1; // Selected digit; 1-4 = main; 5-6 = shot
 	int replace_digit = -1; // What digit to replace the selected one with; -1 indicates no replacement
 
-	// Constant (TODO: maybe make const?) time variables to reset shot clock
-	Time time_30 = {0, 0, 3, 0, 0};
-	Time time_35 = {0, 0, 3, 5, 0};
-	Time time_60 = {0, 0, 6, 0, 0};
+	// Constant time variables to reset shot clock
+	const Time time_30 = {0, 0, 3, 0, 0};
+	const Time time_35 = {0, 0, 3, 5, 0};
+	const Time time_60 = {0, 0, 6, 0, 0};
 
 	// Audio
 	InitAudioDevice ();
@@ -218,6 +224,8 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 		switch (scoreboard_mode)
 		{
+			// ### Clock mode
+			//-------------------------------------------------------------------------------------
 			case CLOCK:
 				// Start/stop clocks individually
 				if (IsKeyPressed (KEY_START_STOP_MAIN_CLOCK))
@@ -276,10 +284,8 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					shot_clock_mode = TENTH_SECONDS;
 				else
 					shot_clock_mode = NORMAL;
-				//----------------------------------------------------------------
 
-				// ### Changing mode
-				//----------------------------------------------------------------
+				// Changing modes
 				// Home or visitor
 				if (IsKeyPressed (KEY_CHANGING_HOME))
 					team = HOME;
@@ -294,10 +300,8 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					change_type = TOL;
 				if (IsKeyPressed (KEY_CHANGE_MODE_PERIOD))
 					change_type = PERIOD;
-				//----------------------------------------------------------------
 
-				// ### Change score, fouls, TOL
-				//----------------------------------------------------------------
+				// Change score, fouls, TOL
 				// Check change type: the same buttons will change different values based on this
 				switch (change_type)
 				{
@@ -332,10 +336,8 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 							period--;
 						break;
 				}
-				//----------------------------------------------------------------
 
-				// ### Game buzzer sound
-				//----------------------------------------------------------------
+				// Game buzzer sound
 				// Play when key is pressed, if not then play when one of the clocks has run out and is still "running", else stop sound
 				if (IsKeyDown (KEY_SOUND_BUZZER))
 				{
@@ -354,7 +356,6 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				}
 				else
 					StopSound (buzzer_sound);
-				//----------------------------------------------------------------
 
 				// Update edit mode buffers, reset edit mode variables, and enter edit mode
 				if (!main_clock_running && !shot_clock_running && (IsKeyPressed (KEY_SLASH) || IsKeyPressed (KEY_BACKSLASH)))
@@ -373,6 +374,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				main_clock_display = main_clock;
 				shot_clock_display = shot_clock;
 				break;
+				//---------------------------------------------------------------------------------
 			case EDIT_MODE:
 				// ### Edit mode
 				//---------------------------------------------------------------------------------
@@ -525,8 +527,8 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				// Set display time to edit mode buffer instead of actual value
 				main_clock_display = main_clock_buffer;
 				shot_clock_display = shot_clock_buffer;
-				//---------------------------------------------------------------------------------
 				break;
+				//---------------------------------------------------------------------------------
 		}
 		//-----------------------------------------------------------------------------------------
 
