@@ -17,8 +17,7 @@ request.
 The 'main' branch contains a stable version of the program that is suitable for
 use in games.
 
-New features will be developed in a separate branch. The name of this branch
-may vary, but it should be called 'experimental' or 'development'.
+New features will be developed in a separate branch named 'dev'. (version 4+)
 
 
 ===== Build =====
@@ -57,8 +56,10 @@ if the clock is set to running. While a clock is running and its time is equal
 to zero, the game buzzer will sound. [SPACE] starts both clocks when they are
 both stopped, and stops all clocks in any other case. [L-CTRL] starts and stops
 the shot clock independently, and [R-CTRL] starts and stops the main clock.
-[L-SHIFT] resets the shot clock to 35 seconds for normal gameplay, and
-[R-SHIFT] resets it to 30 or 60 seconds for timeouts.
+[L-SHIFT] resets the shot clock to 35 seconds and resets the timeout clock to
+30 or 60 seconds (60 when it is already equal to 30). To switch between shot
+and timeout clocks, press [L-ALT] while all clocks are stopped. Note that the
+main clock will not run when the timeout clock is being displayed.
 
 Edit Mode:
   When there is a timing error or the main clock needs to be set, you can use
@@ -78,8 +79,8 @@ Refer to the Controls Reference for any controls not explained in this section.
 [SPACE] ----- start/stop both clocks, if one is running, both will be stopped
 [L-CTRL] ---- start/stop shot clock only
 [R-CTRL] ---- start/stop main clock only
-[L-SHIFT] --- reset shot clock to 35 seconds
-[R-SHIFT] --- reset shot clock to 30 or 60 seconds (only when stopped)
+[L-SHIFT] --- reset shot clock to 35 seconds, or timeout clock to 30/60 seconds
+[L-ALT] ----- switch between shot clock and timeout clock
 [G] --------- sound (g)ame buzzer
 [H] --------- select (h)ome team
 [V] --------- select (v)isitor team

@@ -10,6 +10,9 @@ Apr 15-19 2021 version 3:
 - improved comments
 - redo README
 
+May 12 2021 version 4:
+- added timeout clock mode
+
 TODO:
 - add feature to disable shot clock (and main clock maybe)
 - create a release and possibly port to Windows/macOS

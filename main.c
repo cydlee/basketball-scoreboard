@@ -1,6 +1,6 @@
 /**************************************************************************************************
 
-Basketball Scoreboard version 3
+Basketball Scoreboard version 4
 Copyright (c) 2021 Cyrus Lee
 
 This program is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>
 #include "raylib.h"
 
 #define NAME "Basketball Scoreboard"
-#define VERSION "version 3"
+#define VERSION "version 4"
 #define COPYRIGHT "Copyright (c) 2021 Cyrus Lee"
 
 // Input keys
@@ -56,10 +56,9 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>
 #define KEY_START_STOP_CLOCKS      KEY_SPACE
 #define KEY_START_STOP_SHOT_CLOCK  KEY_LEFT_CONTROL
 #define KEY_START_STOP_MAIN_CLOCK  KEY_RIGHT_CONTROL
-#define KEY_DISABLE_SHOT_CLOCK     KEY_LEFT_ALT
-#define KEY_DISABLE_MAIN_CLOCK     KEY_RIGHT_ALT
+#define KEY_SWITCH_SHOT_CLOCK      KEY_LEFT_ALT
+#define KEY_DISABLE_MAIN_CLOCK     KEY_RIGHT_ALT     // NOT USED
 #define KEY_RESET_SHOT_CLOCK       KEY_LEFT_SHIFT
-#define KEY_TIMEOUT_SHOT_CLOCK     KEY_RIGHT_SHIFT
 #define KEY_SOUND_BUZZER           KEY_G
 #define KEY_CHANGING_HOME          KEY_H
 #define KEY_CHANGING_VISITOR       KEY_V
@@ -75,6 +74,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>
 
 #define DARKDARKGRAY (Color){25, 25, 25, 255}
 #define DARKRED (Color){130, 33, 55, 255}
+#define DARKGOLD (Color){128, 101, 0, 255}
 
 typedef struct Time { int ten_minutes, minutes, ten_seconds, seconds, tenth_seconds; } Time;
 typedef struct DisplayBox { float x, y, width, height; } DisplayBox;
@@ -173,12 +173,14 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 	Mode scoreboard_mode = CLOCK; // Scoreboard mode: clock or edit mode
 	TimerMode main_clock_mode = NORMAL; // Controls whether time is displayed as normal or tenth seconds
 	TimerMode shot_clock_mode = NORMAL;
+	int shot_clock_showing = 1; // 0 = timeout clock showing; 1 = shot clock showing
 	int shot_clock_enabled = 1;
 	int main_clock_enabled = 1; // Main/shot clock enabled - whether to display or not
 	int shot_clock_running = 0; // Main/shot clock running - whether to update time every frame
 	int main_clock_running = 0;
 	int shot_clock_add_tenth_second = 1; // Every 3 frames (30 FPS) update time by 0.1 seconds
 	int main_clock_add_tenth_second = 1;
+	int timeout_clock_add_tenth_second = 1;
 
 	// Game data
 	Time main_clock = {0, 8, 0, 0, 0}; // Stores actual time for main/shot clocks
@@ -227,6 +229,9 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			// ### Clock mode
 			//-------------------------------------------------------------------------------------
 			case CLOCK:
+				// Switch between shot clock and timeout clock
+				if (IsKeyPressed (KEY_SWITCH_SHOT_CLOCK) && !shot_clock_running && !main_clock_running)
+					shot_clock_showing = !shot_clock_showing;
 				// Start/stop clocks individually
 				if (IsKeyPressed (KEY_START_STOP_MAIN_CLOCK))
 					main_clock_running = !main_clock_running;
@@ -242,7 +247,7 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 					shot_clock_running = main_clock_running;
 				}
 				// Update clocks only if neither has no time left
-				if (TimeToInt (main_clock) != 0 && TimeToInt (shot_clock) != 0)
+				if (TimeToInt (main_clock) != 0 && TimeToInt (shot_clock) != 0 && shot_clock_showing)
 				{
 					// Main clock, only if it is running
 					if (main_clock_running)
@@ -263,27 +268,47 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 							shot_clock_add_tenth_second = 0;
 					}
 				}
-
-				// Reset shot clock (35)
-				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
-					shot_clock = time_35;
-				// Reset shot clock to 30 only if it is stopped, and reset to 60 if it is already 30 (and stopped)
-				if (IsKeyPressed (KEY_TIMEOUT_SHOT_CLOCK) && !shot_clock_running)
+				// Timeout clock, only if it is running
+				else if (TimeToInt (timeout_clock) != 0 && !shot_clock_showing && shot_clock_running)
 				{
-					if (TimeToInt (shot_clock) == 300)
-						shot_clock = time_60;
+					if (timeout_clock_add_tenth_second == 0)
+						timeout_clock = UpdateTime (timeout_clock);
+					timeout_clock_add_tenth_second++;
+					if (timeout_clock_add_tenth_second > 2)
+						timeout_clock_add_tenth_second = 0;
+				}
+				// Reset shot clock (35) or timeout clock (30/60)
+				if (IsKeyPressed (KEY_RESET_SHOT_CLOCK))
+				{
+					if (shot_clock_showing)
+						shot_clock = time_35;
 					else
-						shot_clock = time_30;
+					{
+						if (TimeToInt (timeout_clock) == 300)
+							timeout_clock = time_60;
+						else
+							timeout_clock = time_30;
+					}
 				}
 				// Check if either clock should be set to tenth_seconds mode
 				if (TimeToInt (main_clock) < 600)
 					main_clock_mode = TENTH_SECONDS;
 				else
 					main_clock_mode = NORMAL;
-				if (TimeToInt (shot_clock) < 100)
-					shot_clock_mode = TENTH_SECONDS;
+				if (shot_clock_showing)
+				{
+					if (TimeToInt (shot_clock) < 100)
+						shot_clock_mode = TENTH_SECONDS;
+					else
+						shot_clock_mode = NORMAL;
+				}
 				else
-					shot_clock_mode = NORMAL;
+				{
+					if (TimeToInt (timeout_clock) < 100)
+						shot_clock_mode = TENTH_SECONDS;
+					else
+						shot_clock_mode = NORMAL;
+				}
 
 				// Changing modes
 				// Home or visitor
@@ -339,17 +364,11 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 				// Game buzzer sound
 				// Play when key is pressed, if not then play when one of the clocks has run out and is still "running", else stop sound
-				if (IsKeyDown (KEY_SOUND_BUZZER))
-				{
-					if (!IsSoundPlaying (buzzer_sound))
-						PlaySound (buzzer_sound);
-				}
-				else if (main_clock_running && TimeToInt (main_clock) == 0)
-				{
-					if (!IsSoundPlaying (buzzer_sound))
-						PlaySound (buzzer_sound);
-				}
-				else if (shot_clock_running && TimeToInt (shot_clock) == 0)
+				if ((IsKeyDown (KEY_SOUND_BUZZER)) ||
+					(main_clock_running && TimeToInt (main_clock) == 0) ||
+					(shot_clock_showing && shot_clock_running && TimeToInt (shot_clock) == 0) ||
+					(!shot_clock_showing && shot_clock_running && TimeToInt (timeout_clock) == 0) ||
+					(!shot_clock_showing && shot_clock_running && TimeToInt (timeout_clock) <= 150 && TimeToInt (timeout_clock) >= 140))
 				{
 					if (!IsSoundPlaying (buzzer_sound))
 						PlaySound (buzzer_sound);
@@ -361,7 +380,10 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				if (!main_clock_running && !shot_clock_running && (IsKeyPressed (KEY_SLASH) || IsKeyPressed (KEY_BACKSLASH)))
 				{
 					main_clock_buffer = main_clock;
-					shot_clock_buffer = shot_clock;
+					if (shot_clock_showing)
+						shot_clock_buffer = shot_clock;
+					else
+						shot_clock_buffer = timeout_clock;
 					score_buffer[HOME] = score[HOME];
 					score_buffer[VISITOR] = score[VISITOR];
 					selected_digit = 1; // 1-4 = digits 1-4 of the main clock, 5-6 = digits 1-2 of the shot clock
@@ -372,7 +394,10 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 
 				// Set clock displays to actual time every frame
 				main_clock_display = main_clock;
-				shot_clock_display = shot_clock;
+				if (shot_clock_showing)
+					shot_clock_display = shot_clock;
+				else
+					shot_clock_display = timeout_clock;
 				break;
 				//---------------------------------------------------------------------------------
 			case EDIT_MODE:
@@ -385,7 +410,10 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				if (IsKeyPressed (KEY_ENTER))
 				{
 					main_clock = main_clock_buffer;
-					shot_clock = shot_clock_buffer;
+					if (shot_clock_showing)
+						shot_clock = shot_clock_buffer;
+					else
+						timeout_clock = shot_clock_buffer;
 					score[HOME] = score_buffer[HOME];
 					score[VISITOR] = score_buffer[VISITOR];
 					scoreboard_mode = CLOCK;
@@ -618,8 +646,10 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			// Draw boxes
 			if (shot_clock_running)
 				DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), WHITE);
-			else
+			else if (shot_clock_showing)
 				DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), GREEN);
+			else
+				DrawRectangle (shot_clock_box.x - border, shot_clock_box.y - border, shot_clock_box.width + (border * 2), shot_clock_box.height + (border * 2), GOLD);
 			DrawRectangle (shot_clock_box.x, shot_clock_box.y, shot_clock_box.width, shot_clock_box.height, BLACK);
 			// Edit mode
 			if (scoreboard_mode == EDIT_MODE)
@@ -627,17 +657,22 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 				switch (selected_digit)
 				{
 					case 5:
-						DrawRectangle (shot_clock_box.x, shot_clock_box.y, border * 7, border * 11, DARKGREEN);
+						if (shot_clock_showing)
+							DrawRectangle (shot_clock_box.x, shot_clock_box.y, border * 7, border * 11, DARKGREEN);
+						else
+							DrawRectangle (shot_clock_box.x, shot_clock_box.y, border * 7, border * 11, DARKGOLD);
 						break;
 					case 6:
-						DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y, border * 7, border * 11, DARKGREEN);
+						if (shot_clock_showing)
+							DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y, border * 7, border * 11, DARKGREEN);
+						else
+							DrawRectangle (shot_clock_box.x + (border * 7), shot_clock_box.y, border * 7, border * 11, DARKGOLD);
 						break;
 				}
 			}
 			// Draw digits
 			if (!shot_clock_enabled)
 			{
-				// Less than ten seconds
 				DrawDigit (-1, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
 				DrawDigit (-1, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
 				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
@@ -645,15 +680,32 @@ Made with raylib, by raysan5 <https://github.com/raysan5/raylib>\n\
 			else if (shot_clock_mode == TENTH_SECONDS)
 			{
 				// Less than ten seconds
-				DrawDigit (shot_clock_display.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawDigit (shot_clock_display.tenth_seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, GREEN);
+				if (shot_clock_showing)
+				{
+					DrawDigit (shot_clock_display.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+					DrawDigit (shot_clock_display.tenth_seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+					DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, GREEN);
+				}
+				else
+				{
+					DrawDigit (shot_clock_display.seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GOLD, 1);
+					DrawDigit (shot_clock_display.tenth_seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GOLD, 1);
+					DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, GOLD);
+				}
 			}
 			else
 			{
 				// More than ten seconds
-				DrawDigit (shot_clock_display.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
-				DrawDigit (shot_clock_display.seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				if (shot_clock_showing)
+				{
+					DrawDigit (shot_clock_display.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GREEN, 1);
+					DrawDigit (shot_clock_display.seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GREEN, 1);
+				}
+				else
+				{
+					DrawDigit (shot_clock_display.ten_seconds, shot_clock_box.x + border, shot_clock_box.y + border, border * 5, GOLD, 1);
+					DrawDigit (shot_clock_display.seconds, shot_clock_box.x + (border * 8), shot_clock_box.y + border, border * 5, GOLD, 1);
+				}
 				DrawRectangle (shot_clock_box.x + (border * 6.5f), shot_clock_box.y + (border * 7.5f), border, border, DARKDARKGRAY);
 			}
 			//-------------------------------------------------------------------------------------
